@@ -1,0 +1,26 @@
+{
+  "short_name": "Billboard",
+  "name": "Billboard",
+  "icons": [
+    {
+      "src": "/billboard/icons8-dots-ios-17-outlined-16.png",
+      "sizes": "16x16",
+      "type": "image/png"
+    },
+    {
+      "src": "/billboard/icons8-dots-ios-17-outlined-32.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    },
+    {
+      "src": "/billboard/icons8-dots-ios-17-outlined-96.png",
+      "sizes": "96x96",
+      "type": "image/png"
+    }
+  ],
+  "start_url": "/billboard/",
+  "display": "standalone",
+  "theme_color": "#4CAF50",
+  "background_color": "#ffffff",
+  "scope": "/billboard/"
+}

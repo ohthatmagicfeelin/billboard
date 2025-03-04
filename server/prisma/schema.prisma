@@ -1,0 +1,136 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               Int            @id @default(autoincrement())
+  email            String         @unique @db.VarChar(255)
+  password         String         @db.VarChar(255)
+  emailVerified    Boolean?       @default(false) @map("email_verified")
+  stripeCustomerId String?        @unique @map("stripe_customer_id") @db.VarChar(255)
+  createdAt        DateTime       @default(now()) @map("created_at") @db.Timestamptz
+  subscriptions    Subscription[]
+  auditLogs        AuditLog[]
+  passwordResetTokens PasswordResetToken[]
+  feedback         Feedback[]
+  settings         UserSettings?
+  emailVerificationTokens EmailVerificationToken[]
+  sessions         Session[]
+
+  @@map("users")
+}
+
+model Subscription {
+  id                   Int      @id @default(autoincrement())
+  userId               Int      @map("user_id")
+  stripeSubscriptionId String   @unique @map("stripe_subscription_id") @db.VarChar(255)
+  status               String   @db.VarChar(50)
+  currentPeriodEnd     DateTime @map("current_period_end") @db.Timestamptz
+  createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status], name: "idx_subscriptions_status")
+  @@index([userId], name: "idx_subscriptions_user_id")
+  @@map("subscriptions")
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int?     @map("user_id")
+  action    String   @db.VarChar(255)
+  entity    String   @db.VarChar(255)
+  entityId  String   @map("entity_id") @db.VarChar(255)
+  details   Json?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  user      User?    @relation(fields: [userId], references: [id])
+
+  @@map("audit_logs")
+  @@index([entity, entityId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model PasswordResetToken {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  used      Boolean  @default(false)
+  expiresAt DateTime
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("password_reset_tokens")
+}
+
+model Feedback {
+  id        String   @id @default(uuid())
+  message   String
+  rating    Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  // Optional relation to User
+  userId    Int?     @map("user_id")
+  user      User?    @relation(fields: [userId], references: [id])
+  
+  // For anonymous feedback
+  userEmail String?  @map("user_email") @db.VarChar(255)
+  userName  String?  @map("user_name") @db.VarChar(255)
+
+  @@map("feedback")
+}
+
+model UserSettings {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @unique @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Explicit schema settings
+  theme           String    @default("system") // system, light, dark
+  emailNotifications Boolean @default(true) @map("email_notifications")
+  pushNotifications Boolean @default(true) @map("push_notifications")
+  
+  // Dynamic key-value settings
+  customSettings Json?
+  
+  updatedAt DateTime @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("user_settings")
+}
+
+model EmailVerificationToken {
+  id        String    @id @default(uuid())
+  token     String    @unique
+  userId    Int       @map("user_id")
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  used      Boolean   @default(false)
+  expiresAt DateTime  @map("expires_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@map("email_verification_tokens")
+  @@index([token])
+  @@index([userId])
+}
+
+model Session {
+  id        String   @id
+  sid       String   @unique
+  data      String
+  expiresAt DateTime @map("expires_at") @db.Timestamp(3)
+  createdAt DateTime @default(now()) @map("created_at")
+  userId    Int?     @map("user_id")
+  user      User?    @relation(fields: [userId], references: [id])
+
+  @@map("sessions")
+}
