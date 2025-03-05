@@ -64,17 +64,37 @@ export function BillboardDisplay({ weekInfo, chartData, loading, error }) {
             {/* Stats */}
             <div className="text-right ml-4 flex flex-col items-end space-y-1">
               {entry.last_week && (
-                <div className="flex items-center">
+                <div className="flex items-center text-sm">
+                  <span className="text-gray-600 dark:text-gray-400">
+                    Last Week: #{entry.last_week}
+                  </span>
                   <div className={`
-                    px-2 py-1 rounded text-xs font-bold
+                    ml-2 inline-flex items-center px-2 py-1 rounded text-xs font-medium
                     ${entry.last_week < entry.this_week 
                       ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300' 
                       : entry.last_week > entry.this_week 
                         ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
                         : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'}
                   `}>
-                    {entry.last_week < entry.this_week ? `↓ ${entry.this_week - entry.last_week}` : 
-                     entry.last_week > entry.this_week ? `↑ ${entry.last_week - entry.this_week}` : '→'}
+                    {entry.last_week < entry.this_week ? (
+                      <>
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                        </svg>
+                        <span className="ml-1">{entry.this_week - entry.last_week}</span>
+                      </>
+                    ) : entry.last_week > entry.this_week ? (
+                      <>
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 15.75 7.5-7.5 7.5 7.5" />
+                        </svg>
+                        <span className="ml-1">{entry.last_week - entry.this_week}</span>
+                      </>
+                    ) : (
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h8" />
+                      </svg>
+                    )}
                   </div>
                 </div>
               )}
