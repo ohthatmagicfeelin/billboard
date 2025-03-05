@@ -31,7 +31,7 @@ export function BillboardDisplay({ weekInfo, chartData, loading, error }) {
       if (pendingTrack) {
         sessionStorage.setItem('pendingTrack', JSON.stringify(pendingTrack));
       }
-      const { data } = await api.get('/api/spotify/auth-url');
+      const { data } = await api.get('/api/spotify/auth/auth-url');
       window.location.href = data.url;
     } catch (error) {
       console.error('Failed to get Spotify auth URL:', error);

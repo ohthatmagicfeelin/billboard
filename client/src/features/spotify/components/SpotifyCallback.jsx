@@ -13,7 +13,7 @@ export function SpotifyCallback() {
       const returnTo = sessionStorage.getItem('returnTo') || '/';
       
       try {
-        await api.get(`/api/spotify/callback`, {
+        await api.get(`/api/spotify/auth/callback`, {
           params: { code }
         });
         // Check connection status after successful callback

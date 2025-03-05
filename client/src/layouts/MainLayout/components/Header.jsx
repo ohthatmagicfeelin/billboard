@@ -35,7 +35,7 @@ export function Header() {
 
   const handleSpotifyLink = async () => {
     try {
-      const { data } = await api.get('/api/spotify/auth-url');
+      const { data } = await api.get('/api/spotify/auth/auth-url');
       sessionStorage.setItem('returnTo', window.location.pathname);
       window.location.href = data.url;
     } catch (error) {
