@@ -1,10 +1,23 @@
+import { Link, useNavigate } from 'react-router-dom';
+import { Menu, Transition } from '@headlessui/react';
+import { Fragment } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/common/hooks/useTheme';
-import { useNavigate, Link } from 'react-router-dom';
+import { 
+  FaUser, 
+  FaCog, 
+  FaSignOutAlt, 
+  FaMoon, 
+  FaSun, 
+  FaChartBar, 
+  FaSignInAlt, 
+  FaUserPlus,
+  FaHistory
+} from 'react-icons/fa';
 
 export function Header() {
   const { user, logout } = useAuth();
-  const { isDarkMode } = useTheme();
+  const { isDarkMode, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -17,73 +30,142 @@ export function Header() {
   };
 
   return (
-    <header className="bg-white dark:bg-gray-800 shadow-sm">
-      <div className="container mx-auto px-4">
+    <header className="sticky top-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm
+      border-b border-gray-200 dark:border-gray-800">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* Logo/Brand */}
-          <div>
-            <Link 
-              to={user ? "/" : "/signup"} 
-              className="text-xl font-bold text-gray-800 dark:text-white"
+          {/* Logo */}
+          <Link 
+            to={user ? "/" : "/signup"}
+            className="text-xl font-bold bg-gradient-to-r from-blue-500 to-purple-500 
+              bg-clip-text text-transparent"
+          >
+            Billboard
+          </Link>
+
+          {/* Right Section */}
+          <div className="flex items-center gap-4">
+            {/* Theme Toggle */}
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-lg
+                text-gray-600 dark:text-blue-200
+                hover:bg-gray-100 dark:hover:bg-gray-800
+                transition-colors"
             >
-              Billboard
-            </Link>
-          </div>
+              {isDarkMode ? <FaSun className="w-5 h-5" /> : <FaMoon className="w-5 h-5" />}
+            </button>
 
-          {/* User-specific content */}
-          {user ? (
-            <div className="flex items-center space-x-4">
-              <span className="text-gray-700 dark:text-gray-300">{user.email}</span>
-              
-              {/* Add Settings Link */}
-              <Link
-                to="/settings"
-                className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
-              >
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+            {user ? (
+              <Menu as="div" className="relative">
+                <Menu.Button
+                  className="flex items-center gap-2 p-2 rounded-lg
+                    hover:bg-gray-100 dark:hover:bg-gray-800
+                    transition-colors"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-                  />
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                  />
-                </svg>
-              </Link>
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-purple-400 
+                    flex items-center justify-center text-sm font-medium text-white">
+                    {user.email.charAt(0).toUpperCase()}
+                  </div>
+                  <span className="hidden md:block text-gray-700 dark:text-blue-50">
+                    {user.email}
+                  </span>
+                </Menu.Button>
 
-              <button
-                onClick={handleLogout}
-                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded"
-              >
-                Logout
-              </button>
-            </div>
-          ) : (
-            <div className="space-x-4">
-              <Link
-                to="/login"
-                className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
-              >
-                Login
-              </Link>
-              <Link
-                to="/signup"
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
-              >
-                Sign Up
-              </Link>
-            </div>
-          )}
+                <Transition
+                  as={Fragment}
+                  enter="transition ease-out duration-100"
+                  enterFrom="transform opacity-0 scale-95"
+                  enterTo="transform opacity-100 scale-100"
+                  leave="transition ease-in duration-75"
+                  leaveFrom="transform opacity-100 scale-100"
+                  leaveTo="transform opacity-0 scale-95"
+                >
+                  <Menu.Items className="absolute right-0 mt-2 w-56 rounded-xl
+                    bg-white dark:bg-gray-800
+                    shadow-lg ring-1 ring-black ring-opacity-5
+                    dark:ring-white dark:ring-opacity-10
+                    focus:outline-none"
+                  >
+                    <div className="py-1">
+                      <Menu.Item>
+                        {({ active }) => (
+                          <Link
+                            to="/settings"
+                            className={`flex items-center gap-2 px-4 py-2
+                              ${active 
+                                ? 'bg-gray-100 dark:bg-gray-700/50 text-blue-500'
+                                : 'text-gray-700 dark:text-blue-200'
+                              }`}
+                          >
+                            <FaCog className="w-4 h-4" />
+                            Settings
+                          </Link>
+                        )}
+                      </Menu.Item>
+
+                      <Menu.Item>
+                        {({ active }) => (
+                          <Link
+                            to="/history"
+                            className={`flex items-center gap-2 px-4 py-2
+                              ${active 
+                                ? 'bg-gray-100 dark:bg-gray-700/50 text-blue-500'
+                                : 'text-gray-700 dark:text-blue-200'
+                              }`}
+                          >
+                            <FaHistory className="w-4 h-4" />
+                            History
+                          </Link>
+                        )}
+                      </Menu.Item>
+
+                      <Menu.Separator className="my-1 border-t border-gray-200 dark:border-gray-700" />
+
+                      <Menu.Item>
+                        {({ active }) => (
+                          <button
+                            onClick={handleLogout}
+                            className={`flex items-center gap-2 px-4 py-2 w-full
+                              ${active 
+                                ? 'bg-gray-100 dark:bg-gray-700/50 text-red-500'
+                                : 'text-gray-700 dark:text-blue-200'
+                              }`}
+                          >
+                            <FaSignOutAlt className="w-4 h-4" />
+                            Logout
+                          </button>
+                        )}
+                      </Menu.Item>
+                    </div>
+                  </Menu.Items>
+                </Transition>
+              </Menu>
+            ) : (
+              <div className="flex items-center gap-2 sm:gap-4">
+                <Link
+                  to="/login"
+                  className="sm:px-4 sm:py-2 p-2 rounded-lg
+                    text-gray-700 dark:text-blue-200 
+                    hover:text-blue-500 dark:hover:text-blue-400 
+                    transition-colors"
+                >
+                  <FaSignInAlt className="w-5 h-5 sm:hidden" />
+                  <span className="hidden sm:inline font-medium">Log in</span>
+                </Link>
+                <Link
+                  to="/signup"
+                  className="sm:px-4 sm:py-2 p-2 rounded-lg
+                    bg-gradient-to-r from-blue-500 to-purple-500
+                    text-white font-medium
+                    hover:opacity-90 transition-all"
+                >
+                  <FaUserPlus className="w-5 h-5 sm:hidden" />
+                  <span className="hidden sm:inline">Sign up</span>
+                </Link>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </header>
