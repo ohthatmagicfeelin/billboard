@@ -134,3 +134,30 @@ model Session {
 
   @@map("sessions")
 }
+
+model BillboardChart {
+  id         Int              @id @default(autoincrement())
+  chartDate  DateTime         @unique @map("chart_date")
+  entries    BillboardEntry[]
+  createdAt  DateTime         @default(now()) @map("created_at")
+
+  @@map("billboard_charts")
+  @@index([chartDate])
+}
+
+model BillboardEntry {
+  id            Int            @id @default(autoincrement())
+  chartId       Int           @map("chart_id")
+  song         String         @db.VarChar(255)
+  artist       String         @db.VarChar(255)
+  thisWeek     Int           @map("this_week")
+  lastWeek     Int?          @map("last_week")
+  peakPosition Int           @map("peak_position")
+  weeksOnChart Int           @map("weeks_on_chart")
+  chart        BillboardChart @relation(fields: [chartId], references: [id])
+  createdAt    DateTime       @default(now()) @map("created_at")
+
+  @@unique([chartId, thisWeek])
+  @@index([song, artist])
+  @@map("billboard_entries")
+}
