@@ -8,6 +8,7 @@ import { apiLimiter } from '../../middleware/security/rateLimiter.js';
 import settingsRoutes from '../../features/settings/routes/settingsRoutes.js';
 import sessionRoutes from './sessionRoutes.js';
 import billboardRoutes from '../../features/billboard/routes/billboardRoutes.js';
+import spotifyRoutes from '../../features/spotify/routes/spotifyRoutes.js';
 
 const router = express.Router();
 
@@ -24,6 +25,6 @@ router.use(`${basePath}/api/feedback`, feedbackRoutes);
 router.use(`${basePath}/api/settings`, settingsRoutes);
 router.use(`${basePath}/api/sessions`, sessionRoutes);
 router.use(`${basePath}/api/billboard`, billboardRoutes);
-
+router.use(`${basePath}/api/spotify`, spotifyRoutes);
 
 export default router;

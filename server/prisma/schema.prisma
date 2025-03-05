@@ -27,6 +27,9 @@ model User {
   settings         UserSettings?
   emailVerificationTokens EmailVerificationToken[]
   sessions         Session[]
+  spotifyAccessToken  String?
+  spotifyRefreshToken String?
+  spotifyTokenExpiry  DateTime?
 
   @@map("users")
 }
