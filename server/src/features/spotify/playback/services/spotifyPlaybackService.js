@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { SpotifyPlaybackApi } from '../api/spotifyPlaybackApi.js';
 import { SpotifyAuthRepository } from '../../auth/repositories/spotifyAuthRepository.js';
 import { AppError } from '../../../../utils/AppError.js';
 
@@ -11,24 +11,10 @@ export const SpotifyPlaybackService = {
         throw new AppError('Not connected to Spotify', 401);
       }
 
-      // First search for top 3 artists
-      const artistQuery = encodeURIComponent(artist);
+      // Search for artists
       console.log("searching for artist:", artist);
-      console.log("artist query:", artistQuery);
-
-
-      const artistResponse = await axios.get('https://api.spotify.com/v1/search', {
-        params: {
-          q: artistQuery,
-          type: 'artist',
-          limit: 10,
-          market: 'AU'
-        },
-        headers: {
-          'Authorization': `Bearer ${tokens.spotifyAccessToken}`
-        }
-      });
-
+      const artistResponse = await SpotifyPlaybackApi.searchArtists(tokens.spotifyAccessToken, artist);
+      
       // Sort artists by popularity
       const artists = artistResponse.data.artists.items
         .sort((a, b) => b.popularity - a.popularity);
@@ -38,20 +24,14 @@ export const SpotifyPlaybackService = {
       // Check each artist's top tracks
       for (const artist of artists) {
         console.log(`checking top tracks for ${artist.name}`);
-        const topTracksResponse = await axios.get(
-          `https://api.spotify.com/v1/artists/${artist.id}/top-tracks`,
-          {
-            params: { market: 'AU' },
-            headers: {
-              'Authorization': `Bearer ${tokens.spotifyAccessToken}`
-            }
-          }
+        const topTracksResponse = await SpotifyPlaybackApi.getArtistTopTracks(
+          tokens.spotifyAccessToken, 
+          artist.id
         );
 
         const topTracks = topTracksResponse.data.tracks;
         console.log(`${artist.name}'s top tracks:`, topTracks.map(track => track.name));
 
-        // Look for exact match in top tracks
         const exactMatch = topTracks.find(
           track => track.name.toLowerCase() === song.toLowerCase()
         );
@@ -62,41 +42,24 @@ export const SpotifyPlaybackService = {
         }
       }
 
-      // If no match found in top tracks, try both search strategies
+      // Try both search strategies
       console.log("no match in top tracks, trying track searches");
 
-      // Strategy 1: Search just the track name
-      const trackOnlyQuery = encodeURIComponent(song);
-      const trackOnlyResponse = await axios.get('https://api.spotify.com/v1/search', {
-        params: {
-          q: trackOnlyQuery,
-          type: 'track',
-          limit: 50,
-          market: 'AU',
-          include_external: 'audio'
-        },
-        headers: {
-          'Authorization': `Bearer ${tokens.spotifyAccessToken}`
-        }
-      });
+      // Strategy 1: Track name only
+      const trackOnlyResponse = await SpotifyPlaybackApi.searchTracks(
+        tokens.spotifyAccessToken,
+        song
+      );
 
-      // Strategy 2: Search track name with artist
-      const trackArtistQuery = encodeURIComponent(`track:"${song}" artist:"${artist}"`);
-      const trackArtistResponse = await axios.get('https://api.spotify.com/v1/search', {
-        params: {
-          q: trackArtistQuery,
-          type: 'track',
-          limit: 50,
-          market: 'AU',
-          include_external: 'audio'
-        },
-        headers: {
-          'Authorization': `Bearer ${tokens.spotifyAccessToken}`
-        }
-      });
+      // Strategy 2: Track name with artist
+      const trackArtistResponse = await SpotifyPlaybackApi.searchTracks(
+        tokens.spotifyAccessToken,
+        `track:"${song}" artist:"${artist}"`
+      );
 
-      // list artist track for debug
-      console.log("artist track:", trackArtistResponse.data.tracks.items.map(item => `${item.name} - ${item.artists[0].name}`));
+      console.log("artist track:", trackArtistResponse.data.tracks.items.map(item => 
+        `${item.name} - ${item.artists[0].name}`
+      ));
 
       // Combine and deduplicate results
       const allTracks = [
@@ -104,16 +67,12 @@ export const SpotifyPlaybackService = {
         ...trackArtistResponse.data.tracks.items
       ];
       
-      // Remove duplicates by URI
       const uniqueTracks = [...new Map(allTracks.map(track => [track.uri, track])).values()];
-
-      console.log("Combined search results:", uniqueTracks.map(item => `${item.name} - ${item.artists[0].name}`));
 
       if (!uniqueTracks.length) {
         throw new AppError('Track not found on Spotify', 404);
       }
 
-      // Score and sort all tracks
       const scoredTracks = uniqueTracks
         .map(track => ({
           track,
@@ -121,7 +80,6 @@ export const SpotifyPlaybackService = {
         }))
         .sort((a, b) => b.score - a.score);
 
-      // Log top 3 matches with scores
       console.log("Top 3 matches:");
       scoredTracks.slice(0, 3).forEach(({ track, score }) => {
         console.log(`Score ${score}: ${track.name} - ${track.artists[0].name}`);
@@ -144,15 +102,7 @@ export const SpotifyPlaybackService = {
         throw new AppError('Not connected to Spotify', 401);
       }
 
-      await axios.put(
-        'https://api.spotify.com/v1/me/player/play',
-        { uris: [trackUri] },
-        {
-          headers: {
-            'Authorization': `Bearer ${tokens.spotifyAccessToken}`
-          }
-        }
-      );
+      await SpotifyPlaybackApi.playTrack(tokens.spotifyAccessToken, trackUri);
     } catch (error) {
       if (error.response?.status === 401) {
         throw new AppError('Spotify authorization expired', 401);
