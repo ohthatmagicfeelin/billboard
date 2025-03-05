@@ -1,0 +1,6 @@
+- first entered chart.
+- entered at
+- peak position indicator
+- new indicator
+- filter/search bar (new)
+- sort by (by position, by weeks on chart, by movement)
