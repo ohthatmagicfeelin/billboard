@@ -82,5 +82,68 @@ export const SpotifyService = {
     } catch (error) {
       throw new AppError('Failed to refresh token', 500);
     }
+  },
+
+  async searchTrack(song, artist, userId) {
+    try {
+      const tokens = await SpotifyRepository.getUserTokens(userId);
+      if (!tokens?.spotifyAccessToken) {
+        throw new AppError('Not connected to Spotify', 401);
+      }
+
+      // Clean and encode the search terms
+      const query = encodeURIComponent(`track:"${song}" artist:"${artist}"`);
+      
+      const response = await axios.get('https://api.spotify.com/v1/search', {
+        params: {
+          q: query,
+          type: 'track',
+          limit: 1
+        },
+        headers: {
+          'Authorization': `Bearer ${tokens.spotifyAccessToken}`
+        }
+      });
+
+      const tracks = response.data.tracks.items;
+      if (!tracks.length) {
+        throw new AppError('Track not found on Spotify', 404);
+      }
+
+      return tracks[0];
+    } catch (error) {
+      if (error instanceof AppError) throw error;
+      if (error.response?.status === 401) {
+        throw new AppError('Spotify authorization expired', 401);
+      }
+      throw new AppError('Failed to search Spotify', 500);
+    }
+  },
+
+  async playTrack(trackUri, userId) {
+    try {
+      const tokens = await SpotifyRepository.getUserTokens(userId);
+      if (!tokens?.spotifyAccessToken) {
+        throw new AppError('Not connected to Spotify', 401);
+      }
+
+      await axios.put(
+        'https://api.spotify.com/v1/me/player/play',
+        { uris: [trackUri] },
+        {
+          headers: {
+            'Authorization': `Bearer ${tokens.spotifyAccessToken}`
+          }
+        }
+      );
+    } catch (error) {
+      if (error.response?.status === 401) {
+        throw new AppError('Spotify authorization expired', 401);
+      }
+      if (error.response?.status === 404) {
+        throw new AppError('No active Spotify device found', 404);
+      }
+      throw new AppError('Failed to play track', 500);
+    }
   }
 }; 

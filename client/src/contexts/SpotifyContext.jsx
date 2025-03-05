@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import axios from 'axios';
+import { spotifyApi } from '@/features/spotify/api/spotifyApi';
 import api from '@/api/api';
 
 const SpotifyContext = createContext();
@@ -7,19 +7,8 @@ const SpotifyContext = createContext();
 export function SpotifyProvider({ children }) {
   const [isConnected, setIsConnected] = useState(false);
   const [accessToken, setAccessToken] = useState(null);
-
-  const refreshToken = useCallback(async () => {
-    try {
-      const { data } = await axios.post('/api/spotify/refresh-token');
-      setAccessToken(data.accessToken);
-      return data.accessToken;
-    } catch (error) {
-      console.error('Failed to refresh token:', error);
-      setIsConnected(false);
-      setAccessToken(null);
-      return null;
-    }
-  }, []);
+  const [player, setPlayer] = useState(null);
+  const [deviceId, setDeviceId] = useState(null);
 
   const checkConnection = useCallback(async () => {
     try {
@@ -27,6 +16,7 @@ export function SpotifyProvider({ children }) {
       setIsConnected(data.isConnected);
       if (data.accessToken) {
         setAccessToken(data.accessToken);
+        spotifyApi.setAccessToken(data.accessToken);
       }
       return data.isConnected;
     } catch (error) {
@@ -37,6 +27,57 @@ export function SpotifyProvider({ children }) {
     }
   }, []);
 
+  // Initialize Spotify Web Playback SDK
+  useEffect(() => {
+    if (!accessToken) return;
+
+    const script = document.createElement('script');
+    script.src = 'https://sdk.scdn.co/spotify-player.js';
+    script.async = true;
+
+    document.body.appendChild(script);
+
+    window.onSpotifyWebPlaybackSDKReady = () => {
+      const player = new window.Spotify.Player({
+        name: 'Billboard Time Machine',
+        getOAuthToken: cb => { cb(accessToken); }
+      });
+
+      player.addListener('ready', ({ device_id }) => {
+        console.log('Ready with Device ID', device_id);
+        setDeviceId(device_id);
+      });
+
+      player.addListener('not_ready', ({ device_id }) => {
+        console.log('Device ID has gone offline', device_id);
+      });
+
+      player.connect();
+      setPlayer(player);
+    };
+
+    return () => {
+      if (player) {
+        player.disconnect();
+      }
+    };
+  }, [accessToken]);
+
+  const playTrack = useCallback(async (song, artist) => {
+    if (!isConnected || !accessToken) {
+      throw new Error('Not connected to Spotify');
+    }
+
+    try {
+      const track = await spotifyApi.searchTrack(song, artist);
+      await spotifyApi.playTrack(track.uri);
+      return track;
+    } catch (error) {
+      console.error('Failed to play track:', error);
+      throw error;
+    }
+  }, [isConnected, accessToken]);
+
   // Check connection on mount
   useEffect(() => {
     checkConnection();
@@ -45,8 +86,8 @@ export function SpotifyProvider({ children }) {
   const value = {
     isConnected,
     accessToken,
-    refreshToken,
-    checkConnection
+    checkConnection,
+    playTrack
   };
 
   return (

@@ -61,5 +61,27 @@ export const SpotifyController = {
       isConnected: true, 
       accessToken: tokens.spotifyAccessToken 
     });
+  }),
+
+  search: catchAsync(async (req, res) => {
+    const { song, artist } = req.query;
+    
+    if (!song || !artist) {
+      throw new AppError('Song and artist are required', 400);
+    }
+
+    const track = await SpotifyService.searchTrack(song, artist, req.user.id);
+    res.json(track);
+  }),
+
+  play: catchAsync(async (req, res) => {
+    const { uri } = req.body;
+    
+    if (!uri) {
+      throw new AppError('Track URI is required', 400);
+    }
+
+    await SpotifyService.playTrack(uri, req.user.id);
+    res.json({ success: true });
   })
 }; 

@@ -2,11 +2,13 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSpotify } from '@/contexts/SpotifyContext';
 import { SpotifyLoginPrompt } from '@/features/spotify/components/SpotifyLoginPrompt';
 import api from '@/api/api';
+import { spotifyApi } from '@/features/spotify/api/spotifyApi';
 
 export function BillboardDisplay({ weekInfo, chartData, loading, error }) {
-  const { isConnected } = useSpotify();
+  const { isConnected, playTrack } = useSpotify();
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [pendingTrack, setPendingTrack] = useState(null);
+  const [playbackError, setPlaybackError] = useState(null);
 
   const handlePlay = useCallback(async (song, artist) => {
     if (!isConnected) {
@@ -15,8 +17,12 @@ export function BillboardDisplay({ weekInfo, chartData, loading, error }) {
       return;
     }
     
-    console.log(`Playing: ${song} by ${artist}`);
-    // TODO: Implement actual playback
+    try {
+      setPlaybackError(null);
+      await spotifyApi.searchAndPlay(song, artist);
+    } catch (error) {
+      setPlaybackError(error.message);
+    }
   }, [isConnected]);
 
   const handleSpotifyLogin = useCallback(async () => {
@@ -178,6 +184,13 @@ export function BillboardDisplay({ weekInfo, chartData, loading, error }) {
             </div>
           ))}
         </div>
+        
+        {/* Add error message display */}
+        {playbackError && (
+          <div className="fixed bottom-4 right-4 bg-red-50 dark:bg-red-900 text-red-700 dark:text-red-200 p-4 rounded-lg shadow-lg">
+            {playbackError}
+          </div>
+        )}
       </div>
 
       <SpotifyLoginPrompt
