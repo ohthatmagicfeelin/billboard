@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { billboardApi } from '../api/billboardApi';
 
 // Mock data for development
 const MOCK_DATA = {
@@ -28,19 +29,40 @@ export function useBillboard() {
   const [selectedYear, setSelectedYear] = useState('');
   const [weekInfo, setWeekInfo] = useState('');
   const [chartData, setChartData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (selectedYear) {
-      // This will be replaced with actual API call later
-      setWeekInfo(MOCK_DATA.weekInfo);
-      setChartData(MOCK_DATA.data);
+    async function fetchChartData() {
+      if (!selectedYear) return;
+
+      setLoading(true);
+      setError(null);
+
+      try {
+        const currentDate = new Date().toISOString().split('T')[0];
+        const response = await billboardApi.getHistoricalWeek(selectedYear, currentDate);
+        
+        setWeekInfo(response.weekInfo);
+        setChartData(response.data);
+      } catch (err) {
+        setError(err.response?.data?.message || 'Failed to fetch Billboard data');
+        setChartData(null);
+        setWeekInfo('');
+      } finally {
+        setLoading(false);
+      }
     }
+
+    fetchChartData();
   }, [selectedYear]);
 
   return {
     selectedYear,
     setSelectedYear,
     weekInfo,
-    chartData
+    chartData,
+    loading,
+    error
   };
 } 

@@ -1,4 +1,24 @@
-export function BillboardDisplay({ weekInfo, chartData }) {
+export function BillboardDisplay({ weekInfo, chartData, loading, error }) {
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8 text-center">
+        <div className="animate-pulse text-gray-600 dark:text-gray-300">
+          Loading chart data...
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="bg-red-50 dark:bg-red-900 text-red-700 dark:text-red-200 p-4 rounded-lg">
+          {error}
+        </div>
+      </div>
+    );
+  }
+
   if (!chartData) return null;
 
   return (

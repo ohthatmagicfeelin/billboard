@@ -7,7 +7,9 @@ export function BillboardContainer() {
     selectedYear,
     setSelectedYear,
     weekInfo,
-    chartData
+    chartData,
+    loading,
+    error
   } = useBillboard();
 
   return (
@@ -19,6 +21,8 @@ export function BillboardContainer() {
       <BillboardDisplay 
         weekInfo={weekInfo}
         chartData={chartData}
+        loading={loading}
+        error={error}
       />
     </div>
   );
