@@ -48,11 +48,11 @@ class SpotifyApi {
 
   async searchAndPlay(song, artist) {
     try {
-      const track = await api.get('/api/spotify/search', {
+      const track = await api.get('/api/spotify/playback/search', {
         params: { song, artist }
       });
 
-      await api.put('/api/spotify/play', {
+      await api.put('/api/spotify/playback/play', {
         uri: track.data.uri
       });
 

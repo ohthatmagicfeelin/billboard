@@ -1,7 +1,7 @@
-import prisma from '../../../db/client.js';
-import { AppError } from '../../../utils/AppError.js';
+import prisma from '../../../../db/client.js';
+import { AppError } from '../../../../utils/AppError.js';
 
-export const SpotifyRepository = {
+export const SpotifyAuthRepository = {
   saveUserTokens: async (userId, tokens) => {
     try {
       await prisma.user.update({

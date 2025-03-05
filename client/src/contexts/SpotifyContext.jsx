@@ -12,7 +12,7 @@ export function SpotifyProvider({ children }) {
 
   const checkConnection = useCallback(async () => {
     try {
-      const { data } = await api.get('/api/spotify/check-connection');
+      const { data } = await api.get('/api/spotify/auth/check-connection');
       setIsConnected(data.isConnected);
       if (data.accessToken) {
         setAccessToken(data.accessToken);

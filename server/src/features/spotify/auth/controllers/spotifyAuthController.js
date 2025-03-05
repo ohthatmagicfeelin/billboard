@@ -1,11 +1,11 @@
-import { catchAsync } from '../../../utils/catchAsync.js';
-import { AppError } from '../../../utils/AppError.js';
-import { SpotifyService } from '../services/spotifyService.js';
-import { SpotifyRepository } from '../repositories/spotifyRepository.js';
+import { catchAsync } from '../../../../utils/catchAsync.js';
+import { AppError } from '../../../../utils/AppError.js';
+import { SpotifyAuthService } from '../services/spotifyAuthService.js';
+import { SpotifyAuthRepository } from '../repositories/spotifyAuthRepository.js';
 
-export const SpotifyController = {
+export const SpotifyAuthController = {
   getAuthUrl: catchAsync(async (req, res) => {
-    const authUrl = SpotifyService.generateAuthUrl();
+    const authUrl = SpotifyAuthService.generateAuthUrl();
     res.json({ url: authUrl });
   }),
 
@@ -20,7 +20,7 @@ export const SpotifyController = {
       throw new AppError('User must be authenticated', 401);
     }
 
-    const tokens = await SpotifyService.exchangeCode(code);
+    const tokens = await SpotifyAuthService.exchangeCode(code);
     await SpotifyRepository.saveUserTokens(req.user.id, tokens);
 
     res.json({ success: true });
@@ -31,7 +31,7 @@ export const SpotifyController = {
       throw new AppError('User must be authenticated', 401);
     }
 
-    const tokens = await SpotifyService.refreshToken(req.user.id);
+    const tokens = await SpotifyAuthService.refreshToken(req.user.id);
     res.json({ success: true, accessToken: tokens.access_token });
   }),
 
@@ -40,7 +40,7 @@ export const SpotifyController = {
       return res.json({ isConnected: false });
     }
 
-    const tokens = await SpotifyRepository.getUserTokens(req.user.id);
+    const tokens = await SpotifyAuthRepository.getUserTokens(req.user.id);
     
     if (!tokens?.spotifyAccessToken) {
       return res.json({ isConnected: false });
@@ -50,7 +50,7 @@ export const SpotifyController = {
     const isExpired = tokens.spotifyTokenExpiry < new Date();
     
     if (isExpired) {
-      const newTokens = await SpotifyService.refreshToken(req.user.id);
+      const newTokens = await SpotifyAuthService.refreshToken(req.user.id);
       return res.json({ 
         isConnected: true, 
         accessToken: newTokens.access_token 
@@ -63,25 +63,4 @@ export const SpotifyController = {
     });
   }),
 
-  search: catchAsync(async (req, res) => {
-    const { song, artist } = req.query;
-    
-    if (!song || !artist) {
-      throw new AppError('Song and artist are required', 400);
-    }
-
-    const track = await SpotifyService.searchTrack(song, artist, req.user.id);
-    res.json(track);
-  }),
-
-  play: catchAsync(async (req, res) => {
-    const { uri } = req.body;
-    
-    if (!uri) {
-      throw new AppError('Track URI is required', 400);
-    }
-
-    await SpotifyService.playTrack(uri, req.user.id);
-    res.json({ success: true });
-  })
 }; 
