@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSpotify } from '@/contexts/SpotifyContext';
 import { SpotifyLoginPrompt } from '@/features/spotify/components/SpotifyLoginPrompt';
 import api from '@/api/api';
@@ -6,6 +6,42 @@ import api from '@/api/api';
 export function BillboardDisplay({ weekInfo, chartData, loading, error }) {
   const { isConnected } = useSpotify();
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+  const [pendingTrack, setPendingTrack] = useState(null);
+
+  const handlePlay = useCallback(async (song, artist) => {
+    if (!isConnected) {
+      setPendingTrack({ song, artist });
+      setShowLoginPrompt(true);
+      return;
+    }
+    
+    console.log(`Playing: ${song} by ${artist}`);
+    // TODO: Implement actual playback
+  }, [isConnected]);
+
+  const handleSpotifyLogin = useCallback(async () => {
+    try {
+      sessionStorage.setItem('returnTo', window.location.pathname);
+      if (pendingTrack) {
+        sessionStorage.setItem('pendingTrack', JSON.stringify(pendingTrack));
+      }
+      const { data } = await api.get('/api/spotify/auth-url');
+      window.location.href = data.url;
+    } catch (error) {
+      console.error('Failed to get Spotify auth URL:', error);
+    }
+  }, [pendingTrack]);
+
+  useEffect(() => {
+    if (isConnected) {
+      const savedTrack = sessionStorage.getItem('pendingTrack');
+      if (savedTrack) {
+        const track = JSON.parse(savedTrack);
+        handlePlay(track.song, track.artist);
+        sessionStorage.removeItem('pendingTrack');
+      }
+    }
+  }, [isConnected, handlePlay]);
 
   if (loading) {
     return (
@@ -34,25 +70,6 @@ export function BillboardDisplay({ weekInfo, chartData, loading, error }) {
   }
 
   if (!chartData) return null;
-
-  const handlePlay = async (song, artist) => {
-    if (!isConnected) {
-      setShowLoginPrompt(true);
-      return;
-    }
-    
-    console.log(`Playing: ${song} by ${artist}`);
-    // TODO: Implement actual playback
-  };
-
-  const handleSpotifyLogin = async () => {
-    try {
-      const { data } = await api.get('/api/spotify/auth-url');
-      window.location.href = data.url;
-    } catch (error) {
-      console.error('Failed to get Spotify auth URL:', error);
-    }
-  };
 
   return (
     <>

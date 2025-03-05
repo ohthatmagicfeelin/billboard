@@ -21,24 +21,26 @@ export function SpotifyProvider({ children }) {
     }
   }, []);
 
-  const checkConnection = async () => {
+  const checkConnection = useCallback(async () => {
     try {
       const { data } = await api.get('/api/spotify/check-connection');
       setIsConnected(data.isConnected);
       if (data.accessToken) {
         setAccessToken(data.accessToken);
       }
+      return data.isConnected;
     } catch (error) {
       console.error('Failed to check Spotify connection:', error);
       setIsConnected(false);
       setAccessToken(null);
+      return false;
     }
-  };
+  }, []);
 
   // Check connection on mount
   useEffect(() => {
     checkConnection();
-  }, []);
+  }, [checkConnection]);
 
   const value = {
     isConnected,
