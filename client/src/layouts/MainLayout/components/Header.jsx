@@ -12,7 +12,8 @@ import {
   FaChartBar, 
   FaSignInAlt, 
   FaUserPlus,
-  FaHistory
+  FaHistory,
+  FaSpotify
 } from 'react-icons/fa';
 
 export function Header() {
@@ -27,6 +28,11 @@ export function Header() {
     } catch (error) {
       console.error('Logout failed:', error);
     }
+  };
+
+  const handleSpotifyLink = () => {
+    console.log('Linking Spotify account...');
+    // TODO: Implement Spotify OAuth flow
   };
 
   return (
@@ -88,6 +94,22 @@ export function Header() {
                     focus:outline-none"
                   >
                     <div className="py-1">
+                      <Menu.Item>
+                        {({ active }) => (
+                          <button
+                            onClick={handleSpotifyLink}
+                            className={`flex items-center gap-2 px-4 py-2 w-full
+                              ${active 
+                                ? 'bg-gray-100 dark:bg-gray-700/50 text-green-500'
+                                : 'text-gray-700 dark:text-blue-200'
+                              }`}
+                          >
+                            <FaSpotify className={`w-5 h-5 ${active ? 'text-green-500' : 'text-green-400'}`} />
+                            Link Spotify
+                          </button>
+                        )}
+                      </Menu.Item>
+
                       <Menu.Item>
                         {({ active }) => (
                           <Link
