@@ -8,6 +8,7 @@ import { ProtectedRoute } from '@/features/auth/components/ProtectedRoute';
 import { Settings } from '@/pages/Settings';
 import { MainLayout } from '@/layouts/MainLayout';
 import { useAuth } from '@/contexts/AuthContext';
+import { BillboardContainer } from '@/features/billboard/components/BillboardContainer';
 
 const Home = lazy(() => import('@/common/components/Home'));
 const NotFound = lazy(() => import('@/common/components/error/NotFound'));
@@ -24,10 +25,10 @@ function AppRoutes() {
     <Suspense fallback={<Loading />}>
       <MainLayout>
         <Routes>
-          {/* Root redirect */}
+          {/* Update root route to show Billboard */}
           <Route 
             path="/" 
-            element={<Navigate to={isAuthenticated ? "/home" : "/login"} replace />} 
+            element={<BillboardContainer />} 
           />
 
           {/* Public routes - redirect if authenticated */}
