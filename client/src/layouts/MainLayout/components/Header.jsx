@@ -3,6 +3,8 @@ import { Menu, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/common/hooks/useTheme';
+import { useSpotify } from '@/contexts/SpotifyContext';
+import api from '@/api/api';
 import { 
   FaUser, 
   FaCog, 
@@ -19,6 +21,7 @@ import {
 export function Header() {
   const { user, logout } = useAuth();
   const { isDarkMode, toggleTheme } = useTheme();
+  const { isConnected, checkConnection } = useSpotify();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -30,9 +33,14 @@ export function Header() {
     }
   };
 
-  const handleSpotifyLink = () => {
-    console.log('Linking Spotify account...');
-    // TODO: Implement Spotify OAuth flow
+  const handleSpotifyLink = async () => {
+    try {
+      const { data } = await api.get('/api/spotify/auth-url');
+      sessionStorage.setItem('returnTo', window.location.pathname);
+      window.location.href = data.url;
+    } catch (error) {
+      console.error('Failed to get Spotify auth URL:', error);
+    }
   };
 
   return (
@@ -105,7 +113,7 @@ export function Header() {
                               }`}
                           >
                             <FaSpotify className={`w-5 h-5 ${active ? 'text-green-500' : 'text-green-400'}`} />
-                            Link Spotify
+                            {isConnected ? 'Connected to Spotify' : 'Link Spotify'}
                           </button>
                         )}
                       </Menu.Item>

@@ -9,6 +9,7 @@ import { Settings } from '@/pages/Settings';
 import { MainLayout } from '@/layouts/MainLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { BillboardContainer } from '@/features/billboard/components/BillboardContainer';
+import { SpotifyCallback } from '@/features/spotify/components/SpotifyCallback';
 
 
 const NotFound = lazy(() => import('@/common/components/error/NotFound'));
@@ -66,6 +67,8 @@ function AppRoutes() {
 
           {/* Catch all */}
           <Route path="*" element={<NotFound />} />
+
+          <Route path="/callback/spotify" element={<SpotifyCallback />} />
         </Routes>
       </MainLayout>
     </Suspense>

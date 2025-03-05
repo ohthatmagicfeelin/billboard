@@ -33,5 +33,33 @@ export const SpotifyController = {
 
     const tokens = await SpotifyService.refreshToken(req.user.id);
     res.json({ success: true, accessToken: tokens.access_token });
+  }),
+
+  checkConnection: catchAsync(async (req, res) => {
+    if (!req.user) {
+      return res.json({ isConnected: false });
+    }
+
+    const tokens = await SpotifyRepository.getUserTokens(req.user.id);
+    
+    if (!tokens?.spotifyAccessToken) {
+      return res.json({ isConnected: false });
+    }
+
+    // Check if token is expired
+    const isExpired = tokens.spotifyTokenExpiry < new Date();
+    
+    if (isExpired) {
+      const newTokens = await SpotifyService.refreshToken(req.user.id);
+      return res.json({ 
+        isConnected: true, 
+        accessToken: newTokens.access_token 
+      });
+    }
+
+    return res.json({ 
+      isConnected: true, 
+      accessToken: tokens.spotifyAccessToken 
+    });
   })
 }; 
