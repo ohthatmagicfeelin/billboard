@@ -1,6 +1,7 @@
 // client/src/contexts/AuthContext.jsx
 import { createContext, useContext, useReducer, useEffect, useRef, useMemo } from 'react';
 import { authService } from '@/features/auth/services/authService';
+import { resetCsrfToken } from '@/common/services/csrfService';
 
 const AuthContext = createContext(null);
 
@@ -134,8 +135,10 @@ export function AuthProvider({ children }) {
       try {
         await authService.logout();
         localStorage.removeItem('auth_initialized');
+        resetCsrfToken(); // Reset CSRF token on logout
         dispatch({ type: 'LOGOUT' });
       } catch (error) {
+        resetCsrfToken(); // Reset CSRF token even on error
         dispatch({ type: 'LOGOUT' });
         throw error;
       }
