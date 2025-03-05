@@ -8,24 +8,49 @@ export const BillboardRepository = {
       const targetMonth = targetDate.getMonth();
       const targetDay = targetDate.getDate();
 
-      // Find the most recent chart date before the target date in the specified year
+      // Find the chart date that's closest to but not after the target month/day in the specified year
       const chart = await prisma.billboardChart.findFirst({
         where: {
           chartDate: {
-            gte: new Date(year, 0, 1),
-            lt: new Date(year + 1, 0, 1)
+            gte: new Date(year, 0, 1),    // Start of the specified year
+            lt: new Date(year, targetMonth, targetDay + 1)  // Up to target date
           }
         },
         orderBy: {
-          chartDate: 'desc'
+          chartDate: 'desc'  // Get the most recent one before the target date
         },
         select: {
           chartDate: true
         }
       });
 
-      return chart?.chartDate.toISOString().split('T')[0];
+      if (!chart) {
+        // If no chart found before the target date in that year, get the first chart of the year
+        const firstChart = await prisma.billboardChart.findFirst({
+          where: {
+            chartDate: {
+              gte: new Date(year, 0, 1),
+              lt: new Date(year + 1, 0, 1)
+            }
+          },
+          orderBy: {
+            chartDate: 'asc'
+          },
+          select: {
+            chartDate: true
+          }
+        });
+
+        if (!firstChart) {
+          throw new AppError(`No charts found for year ${year}`, 404);
+        }
+
+        return firstChart.chartDate.toISOString().split('T')[0];
+      }
+
+      return chart.chartDate.toISOString().split('T')[0];
     } catch (error) {
+      if (error instanceof AppError) throw error;
       throw new AppError('Database error while finding historical week', 500);
     }
   },
