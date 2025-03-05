@@ -11,13 +11,65 @@ export const SpotifyPlaybackService = {
         throw new AppError('Not connected to Spotify', 401);
       }
 
-      // Try with track: and artist: qualifiers
-      const query = encodeURIComponent(`${song}`);
-      console.log("searching for", `${artist} ${song}`);
-      
-      const response = await axios.get('https://api.spotify.com/v1/search', {
+      // First search for top 3 artists
+      const artistQuery = encodeURIComponent(artist);
+      console.log("searching for artist:", artist);
+      console.log("artist query:", artistQuery);
+
+
+      const artistResponse = await axios.get('https://api.spotify.com/v1/search', {
         params: {
-          q: query,
+          q: artistQuery,
+          type: 'artist',
+          limit: 10,
+          market: 'AU'
+        },
+        headers: {
+          'Authorization': `Bearer ${tokens.spotifyAccessToken}`
+        }
+      });
+
+      // Sort artists by popularity
+      const artists = artistResponse.data.artists.items
+        .sort((a, b) => b.popularity - a.popularity);
+      
+      console.log("top 10 artists:", artists.map(a => `${a.name} (popularity: ${a.popularity})`));
+
+      // Check each artist's top tracks
+      for (const artist of artists) {
+        console.log(`checking top tracks for ${artist.name}`);
+        const topTracksResponse = await axios.get(
+          `https://api.spotify.com/v1/artists/${artist.id}/top-tracks`,
+          {
+            params: { market: 'AU' },
+            headers: {
+              'Authorization': `Bearer ${tokens.spotifyAccessToken}`
+            }
+          }
+        );
+
+        const topTracks = topTracksResponse.data.tracks;
+        console.log(`${artist.name}'s top tracks:`, topTracks.map(track => track.name));
+
+        // Look for exact match in top tracks
+        const exactMatch = topTracks.find(
+          track => track.name.toLowerCase() === song.toLowerCase()
+        );
+
+        if (exactMatch) {
+          console.log(`found exact match in ${artist.name}'s top tracks:`, exactMatch.name);
+          return exactMatch;
+        }
+      }
+
+      // If no match found in top tracks, try both search strategies
+      console.log("no match in top tracks, trying track searches");
+
+      // Strategy 1: Search just the track name
+      const trackOnlyQuery = encodeURIComponent(song);
+      const trackOnlyResponse = await axios.get('https://api.spotify.com/v1/search', {
+        params: {
+          q: trackOnlyQuery,
           type: 'track',
           limit: 50,
           market: 'AU',
@@ -28,23 +80,54 @@ export const SpotifyPlaybackService = {
         }
       });
 
-      const tracks = response.data.tracks.items;
-      console.log("results:", tracks.map(item => `${item.name} - ${item.artists[0].name}`));
+      // Strategy 2: Search track name with artist
+      const trackArtistQuery = encodeURIComponent(`track:"${song}" artist:"${artist}"`);
+      const trackArtistResponse = await axios.get('https://api.spotify.com/v1/search', {
+        params: {
+          q: trackArtistQuery,
+          type: 'track',
+          limit: 50,
+          market: 'AU',
+          include_external: 'audio'
+        },
+        headers: {
+          'Authorization': `Bearer ${tokens.spotifyAccessToken}`
+        }
+      });
 
-      if (!tracks.length) {
+      // list artist track for debug
+      console.log("artist track:", trackArtistResponse.data.tracks.items.map(item => `${item.name} - ${item.artists[0].name}`));
+
+      // Combine and deduplicate results
+      const allTracks = [
+        ...trackOnlyResponse.data.tracks.items,
+        ...trackArtistResponse.data.tracks.items
+      ];
+      
+      // Remove duplicates by URI
+      const uniqueTracks = [...new Map(allTracks.map(track => [track.uri, track])).values()];
+
+      console.log("Combined search results:", uniqueTracks.map(item => `${item.name} - ${item.artists[0].name}`));
+
+      if (!uniqueTracks.length) {
         throw new AppError('Track not found on Spotify', 404);
       }
 
-      // Simple scoring: exact matches first, then partial matches
-      const bestMatch = tracks
+      // Score and sort all tracks
+      const scoredTracks = uniqueTracks
         .map(track => ({
           track,
           score: calculateSimpleScore(song, artist, track.name, track.artists[0].name)
         }))
-        .sort((a, b) => b.score - a.score)[0].track;
+        .sort((a, b) => b.score - a.score);
 
-      console.log("best match: track -", bestMatch.name, " |  artist -", bestMatch.artists[0].name);
-      return bestMatch;
+      // Log top 3 matches with scores
+      console.log("Top 3 matches:");
+      scoredTracks.slice(0, 3).forEach(({ track, score }) => {
+        console.log(`Score ${score}: ${track.name} - ${track.artists[0].name}`);
+      });
+
+      return scoredTracks[0].track;
     } catch (error) {
       if (error instanceof AppError) throw error;
       if (error.response?.status === 401) {
