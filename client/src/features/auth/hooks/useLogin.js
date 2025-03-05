@@ -20,7 +20,7 @@ export function useLogin() {
     try {
       await login({ email, password, rememberMe });
       setTimeout(() => {
-        const from = location.state?.from?.pathname || '/home';
+        const from = location.state?.from?.pathname || '/';
         navigate(from, { replace: true });
       }, 0);
     } catch (err) {

@@ -10,7 +10,7 @@ import { MainLayout } from '@/layouts/MainLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { BillboardContainer } from '@/features/billboard/components/BillboardContainer';
 
-const Home = lazy(() => import('@/common/components/Home'));
+
 const NotFound = lazy(() => import('@/common/components/error/NotFound'));
 
 function AppRoutes() {
@@ -34,11 +34,11 @@ function AppRoutes() {
           {/* Public routes - redirect if authenticated */}
           <Route 
             path="/login" 
-            element={isAuthenticated ? <Navigate to="/home" replace /> : <LoginForm />} 
+            element={isAuthenticated ? <Navigate to="/" replace /> : <LoginForm />} 
           />
           <Route 
             path="/signup" 
-            element={isAuthenticated ? <Navigate to="/home" replace /> : <SignupForm />} 
+            element={isAuthenticated ? <Navigate to="/" replace /> : <SignupForm />} 
           />
 
           <Route path="/verify-email" element={<VerifyEmail />}/>
@@ -47,14 +47,6 @@ function AppRoutes() {
           <Route path="/verification-pending" element={<EmailVerificationPending />}/>
 
           {/* Protected routes */}
-          <Route
-            path="/home"
-            element={
-              <ProtectedRoute>
-                <Home />
-              </ProtectedRoute>
-            }
-          />
           <Route
             path="/payment"
             element={
