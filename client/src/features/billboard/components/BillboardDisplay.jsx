@@ -27,6 +27,10 @@ export function BillboardDisplay({ weekInfo, chartData, loading, error }) {
 
   if (!chartData) return null;
 
+  const handlePlay = (song, artist) => {
+    console.log(`Playing: ${song} by ${artist}`);
+  };
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       <div className="text-center mb-10">
@@ -42,13 +46,38 @@ export function BillboardDisplay({ weekInfo, chartData, loading, error }) {
         {chartData.map((entry, index) => (
           <div 
             key={index}
-            className="flex items-center p-5 bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-lg transition-shadow duration-200 border border-gray-100 dark:border-gray-700"
+            className="group flex items-center p-5 bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-lg transition-shadow duration-200 border border-gray-100 dark:border-gray-700 relative"
           >
             {/* Position Number */}
             <div className="w-16 h-16 flex items-center justify-center bg-blue-50 dark:bg-gray-700 rounded-lg mr-4">
-              <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+              <span className="text-2xl font-bold text-blue-600 dark:text-blue-400 group-hover:opacity-0 transition-opacity duration-200">
                 {entry.this_week}
               </span>
+              <button
+                onClick={() => handlePlay(entry.song, entry.artist)}
+                className="absolute left-5 w-16 h-16 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                aria-label={`Play ${entry.song}`}
+              >
+                <svg 
+                  className="w-8 h-8 text-blue-600 dark:text-blue-400" 
+                  fill="none" 
+                  viewBox="0 0 24 24" 
+                  stroke="currentColor"
+                >
+                  <path 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    strokeWidth={2} 
+                    d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
+                  />
+                  <path 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    strokeWidth={2} 
+                    d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
+                  />
+                </svg>
+              </button>
             </div>
             
             {/* Song Info */}
