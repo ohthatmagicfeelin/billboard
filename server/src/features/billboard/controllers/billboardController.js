@@ -16,5 +16,16 @@ export const BillboardController = {
     );
 
     res.json(chartData);
+  }),
+
+  getYearWeeks: catchAsync(async (req, res) => {
+    const { year } = req.params;
+
+    if (!year) {
+      throw new AppError('Year is required', 400);
+    }
+
+    const weeks = await BillboardService.getYearWeeks(parseInt(year));
+    res.json(weeks);
   })
 }; 

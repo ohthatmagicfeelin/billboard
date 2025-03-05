@@ -26,5 +26,15 @@ export const BillboardService = {
       if (error instanceof AppError) throw error;
       throw new AppError('Error fetching Billboard chart data', 500);
     }
+  },
+
+  getYearWeeks: async (year) => {
+    try {
+      const weeks = await BillboardRepository.findWeeksByYear(year);
+      return weeks;
+    } catch (error) {
+      if (error instanceof AppError) throw error;
+      throw new AppError('Error fetching weeks for year', 500);
+    }
   }
 }; 

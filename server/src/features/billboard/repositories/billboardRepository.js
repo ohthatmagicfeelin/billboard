@@ -95,6 +95,37 @@ export const BillboardRepository = {
     } catch (error) {
       throw new AppError('Database error while fetching chart', 500);
     }
+  },
+
+  findWeeksByYear: async (year) => {
+    try {
+      const charts = await prisma.billboardChart.findMany({
+        where: {
+          chartDate: {
+            gte: new Date(year, 0, 1),
+            lt: new Date(year + 1, 0, 1)
+          }
+        },
+        orderBy: {
+          chartDate: 'asc'
+        },
+        select: {
+          chartDate: true
+        }
+      });
+
+      if (!charts.length) {
+        throw new AppError(`No charts found for year ${year}`, 404);
+      }
+
+      // Transform dates to expected format
+      return charts.map(chart => ({
+        date: chart.chartDate.toISOString().split('T')[0]
+      }));
+    } catch (error) {
+      if (error instanceof AppError) throw error;
+      throw new AppError('Database error while fetching weeks', 500);
+    }
   }
 };
 

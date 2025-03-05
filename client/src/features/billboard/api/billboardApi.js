@@ -9,5 +9,10 @@ export const billboardApi = {
       }
     });
     return response.data;
+  },
+
+  getYearWeeks: async (year) => {
+    const response = await api.get(`/api/billboard/weeks/${year}`);
+    return response.data;
   }
 }; 
