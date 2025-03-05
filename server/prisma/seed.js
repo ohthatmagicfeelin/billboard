@@ -2,14 +2,60 @@ import { PrismaClient } from '@prisma/client';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import bcrypt from 'bcrypt';  // Make sure to install bcrypt if not already installed
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const prisma = new PrismaClient();
 
+async function cleanDatabase() {
+    console.log('Cleaning database...');
+    
+    // Delete all records from tables in the correct order (to handle foreign key constraints)
+    await prisma.billboardEntry.deleteMany({});
+    await prisma.billboardChart.deleteMany({});
+    await prisma.emailVerificationToken.deleteMany({});
+    await prisma.passwordResetToken.deleteMany({});
+    await prisma.feedback.deleteMany({});
+    await prisma.userSettings.deleteMany({});
+    await prisma.subscription.deleteMany({});
+    await prisma.auditLog.deleteMany({});
+    await prisma.session.deleteMany({});
+    await prisma.user.deleteMany({});
+    
+    console.log('Database cleaned');
+}
+
 async function main() {
+    // Clean the database first
+    await cleanDatabase();
+    
     console.log('Starting seed...');
+    
+    // Create test user
+    try {
+        const hashedPassword = await bcrypt.hash('Pass!111', 10);
+        const user = await prisma.user.upsert({
+            where: { email: 'o@h.com' },
+            update: {},
+            create: {
+                email: 'o@h.com',
+                password: hashedPassword,
+                emailVerified: true,
+                settings: {
+                    create: {
+                        theme: 'system',
+                        emailNotifications: true,
+                        pushNotifications: true
+                    }
+                }
+            }
+        });
+        console.log('Test user created:', user.email);
+    } catch (error) {
+        console.error('Error creating test user:', error);
+    }
     
     // Read the billboard.json file
     const billboardData = JSON.parse(
