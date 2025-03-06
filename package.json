@@ -10,7 +10,7 @@
     "db:backup": "bash deploy/local/manual-db-backup.sh create",
     "db:list": "bash deploy/local/manual-db-backup.sh list",
     "db:restore": "bash deploy/local/manual-db-backup.sh restore",
-    "seed": "node server/prisma/seed.js"
+    "seed": "node server/prisma/seed/index.js"
 
   },
   "keywords": [],

@@ -148,19 +148,53 @@ model BillboardChart {
   @@index([chartDate])
 }
 
+model Artist {
+  id            Int      @id @default(autoincrement())
+  billboardName String   @unique // Original name from Billboard
+  spotifyName   String?  // Name from Spotify
+  spotifyId     String?  @unique // Spotify Artist ID
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  tracks        Track[]  // Relation to tracks
+  billboardEntries BillboardEntry[] // Relation to billboard entries
+
+  @@map("artists")
+  @@index([billboardName])
+  @@index([spotifyId])
+}
+
+model Track {
+  id            Int      @id @default(autoincrement())
+  billboardName String   // Original name from Billboard
+  spotifyName   String?  // Name from Spotify
+  spotifyId     String?  @unique // Spotify Track ID
+  artistId      Int      @map("artist_id")
+  artist        Artist   @relation(fields: [artistId], references: [id])
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  billboardEntries BillboardEntry[] // Relation to billboard entries
+
+  @@unique([billboardName, artistId]) // Same song name by same artist should be unique
+  @@map("tracks")
+  @@index([billboardName])
+  @@index([spotifyId])
+}
+
+// Modify BillboardEntry to include relations
 model BillboardEntry {
   id            Int            @id @default(autoincrement())
   chartId       Int           @map("chart_id")
-  song         String         @db.VarChar(255)
-  artist       String         @db.VarChar(255)
-  thisWeek     Int           @map("this_week")
-  lastWeek     Int?          @map("last_week")
-  peakPosition Int           @map("peak_position")
-  weeksOnChart Int           @map("weeks_on_chart")
-  chart        BillboardChart @relation(fields: [chartId], references: [id])
-  createdAt    DateTime       @default(now()) @map("created_at")
+  trackId       Int           @map("track_id")
+  artistId      Int           @map("artist_id")
+  thisWeek      Int           @map("this_week")
+  lastWeek      Int?          @map("last_week")
+  peakPosition  Int           @map("peak_position")
+  weeksOnChart  Int           @map("weeks_on_chart")
+  chart         BillboardChart @relation(fields: [chartId], references: [id])
+  track         Track         @relation(fields: [trackId], references: [id])
+  artist        Artist        @relation(fields: [artistId], references: [id])
+  createdAt     DateTime      @default(now()) @map("created_at")
 
   @@unique([chartId, thisWeek])
-  @@index([song, artist])
   @@map("billboard_entries")
 }
