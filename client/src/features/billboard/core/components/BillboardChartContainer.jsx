@@ -17,10 +17,14 @@ export function BillboardChartContainer() {
     handleSpotifyLogin
   } = useBillboardChart(selectedDate);
 
+  const handleDateChange = (date) => {
+    setSelectedDate(date || null); // Ensure null when date is empty string
+  };
+
   return (
     <div>
       <DateSelectorContainer
-        onDateChange={setSelectedDate}
+        onDateChange={handleDateChange}
         disabled={loading}
       />
       

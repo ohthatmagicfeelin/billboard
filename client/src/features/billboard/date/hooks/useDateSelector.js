@@ -8,12 +8,6 @@ export function useDateSelector() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Set current year when component mounts
-  useEffect(() => {
-    const currentYear = new Date().getFullYear();
-    setSelectedYear(currentYear);
-  }, []);
-
   // Fetch available weeks when year changes
   useEffect(() => {
     async function fetchAvailableWeeks() {
@@ -30,9 +24,27 @@ export function useDateSelector() {
         const weeks = await billboardApi.getYearWeeks(selectedYear);
         setAvailableWeeks(weeks);
 
-        // If we have weeks, select the most recent week
+        // Find the closest week before or equal to today's month/day
         if (weeks.length > 0) {
-          setSelectedDate(weeks[0].date);
+          const today = new Date();
+          const currentMonth = today.getMonth() + 1; // getMonth() returns 0-11
+          const currentDay = today.getDate();
+          
+          // Find the last week that's before or equal to current month/day
+          const targetWeek = weeks.reduce((closest, week) => {
+            const weekDate = new Date(week.date);
+            const weekMonth = weekDate.getMonth() + 1;
+            const weekDay = weekDate.getDate();
+            
+            // If this week is still before or equal to our target date
+            if (weekMonth < currentMonth || (weekMonth === currentMonth && weekDay <= currentDay)) {
+              return week;
+            }
+            
+            return closest;
+          }, weeks[0]);
+          
+          setSelectedDate(targetWeek.date);
         } else {
           setSelectedDate('');
         }
