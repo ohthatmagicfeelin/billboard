@@ -9,7 +9,7 @@ import { Settings } from '@/pages/Settings';
 import { MainLayout } from '@/layouts/MainLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { BillboardContainer } from '@/features/billboard/components/BillboardContainer';
-import { SpotifyCallback } from '@/features/spotify/components/SpotifyCallback';
+import { SpotifyCallback } from '@/features/spotify/auth/components/SpotifyCallback';
 
 
 const NotFound = lazy(() => import('@/common/components/error/NotFound'));

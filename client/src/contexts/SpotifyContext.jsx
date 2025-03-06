@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { spotifyAuthApi } from '@/features/spotify/auth/spotifyAuthApi';
+import { spotifyAuthApi } from '@/features/spotify/auth/api/spotifyAuthApi';
 import { spotifyApi } from '@/features/spotify/playback/api/spotifyPlaybackApi';
 
 const SpotifyContext = createContext();
