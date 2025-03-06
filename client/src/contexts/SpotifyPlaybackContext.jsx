@@ -17,7 +17,7 @@ export function SpotifyPlaybackProvider({ children }) {
   );
 }
 
-export function useSpotifyPlayback() {
+export function useSpotifyPlaybackContext() {
   const context = useContext(SpotifyPlaybackContext);
   if (!context) {
     throw new Error('useSpotifyPlayback must be used within a SpotifyPlaybackProvider');

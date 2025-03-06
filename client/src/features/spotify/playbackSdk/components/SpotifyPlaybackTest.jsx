@@ -1,8 +1,8 @@
-import { useSpotifyPlayback } from '../../../../contexts/SpotifyPlaybackContext';
+import { useSpotifyPlaybackContext } from '../../../../contexts/SpotifyPlaybackContext';
 import { useSpotify } from '@/contexts/SpotifyContext';
 
 export function SpotifyPlaybackTest() {
-  const { deviceId, player } = useSpotifyPlayback();
+  const { deviceId, player } = useSpotifyPlaybackContext();
   const { isConnected } = useSpotify();
 
   return (
