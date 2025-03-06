@@ -43,6 +43,22 @@ export const SpotifyPlaybackApi = {
     });
   },
 
+  async searchTracksWithPagination(accessToken, query, offset = 0) {
+    return await axios.get('https://api.spotify.com/v1/search', {
+      params: {
+        q: encodeURIComponent(query),
+        type: 'track',
+        limit: 50,
+        offset: offset,
+        market: 'AU',
+        include_external: 'audio'
+      },
+      headers: {
+        'Authorization': `Bearer ${accessToken}`
+      }
+    });
+  },
+
   async playTrack(accessToken, trackUri) {
     return await axios.put(
       'https://api.spotify.com/v1/me/player/play',

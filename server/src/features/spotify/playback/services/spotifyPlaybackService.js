@@ -11,81 +11,16 @@ export const SpotifyPlaybackService = {
         throw new AppError('Not connected to Spotify', 401);
       }
 
-      // Search for artists
-      console.log("searching for artist:", artist);
-      const artistResponse = await SpotifyPlaybackApi.searchArtists(tokens.spotifyAccessToken, artist);
-      
-      // Sort artists by popularity
-      const artists = artistResponse.data.artists.items
-        .sort((a, b) => b.popularity - a.popularity);
-      
-      console.log("top 10 artists:", artists.map(a => `${a.name} (popularity: ${a.popularity})`));
+      // First try with both song and artist
+      let track = await searchWithQuery(`${song} ${artist}`, song, artist, tokens.spotifyAccessToken);
+      if (track) return track;
 
-      // Check each artist's top tracks
-      for (const artist of artists) {
-        console.log(`checking top tracks for ${artist.name}`);
-        const topTracksResponse = await SpotifyPlaybackApi.getArtistTopTracks(
-          tokens.spotifyAccessToken, 
-          artist.id
-        );
+      // If no match found, try with just the song
+      console.log("No match found, trying song name only:", song);
+      track = await searchWithQuery(song, song, artist, tokens.spotifyAccessToken);
+      if (track) return track;
 
-        const topTracks = topTracksResponse.data.tracks;
-        console.log(`${artist.name}'s top tracks:`, topTracks.map(track => track.name));
-
-        const exactMatch = topTracks.find(
-          track => track.name.toLowerCase() === song.toLowerCase()
-        );
-
-        if (exactMatch) {
-          console.log(`found exact match in ${artist.name}'s top tracks:`, exactMatch.name);
-          return exactMatch;
-        }
-      }
-
-      // Try both search strategies
-      console.log("no match in top tracks, trying track searches");
-
-      // Strategy 1: Track name only
-      const trackOnlyResponse = await SpotifyPlaybackApi.searchTracks(
-        tokens.spotifyAccessToken,
-        song
-      );
-
-      // Strategy 2: Track name with artist
-      const trackArtistResponse = await SpotifyPlaybackApi.searchTracks(
-        tokens.spotifyAccessToken,
-        `track:"${song}" artist:"${artist}"`
-      );
-
-      console.log("artist track:", trackArtistResponse.data.tracks.items.map(item => 
-        `${item.name} - ${item.artists[0].name}`
-      ));
-
-      // Combine and deduplicate results
-      const allTracks = [
-        ...trackOnlyResponse.data.tracks.items,
-        ...trackArtistResponse.data.tracks.items
-      ];
-      
-      const uniqueTracks = [...new Map(allTracks.map(track => [track.uri, track])).values()];
-
-      if (!uniqueTracks.length) {
-        throw new AppError('Track not found on Spotify', 404);
-      }
-
-      const scoredTracks = uniqueTracks
-        .map(track => ({
-          track,
-          score: calculateSimpleScore(song, artist, track.name, track.artists[0].name)
-        }))
-        .sort((a, b) => b.score - a.score);
-
-      console.log("Top 3 matches:");
-      scoredTracks.slice(0, 3).forEach(({ track, score }) => {
-        console.log(`Score ${score}: ${track.name} - ${track.artists[0].name}`);
-      });
-
-      return scoredTracks[0].track;
+      throw new AppError('Track not found on Spotify', 404);
     } catch (error) {
       if (error instanceof AppError) throw error;
       if (error.response?.status === 401) {
@@ -115,21 +50,144 @@ export const SpotifyPlaybackService = {
   }
 };
 
-function calculateSimpleScore(searchSong, searchArtist, trackName, artistName) {
+async function searchWithQuery(query, song, artist, accessToken) {
+  let offset = 0;
+  let bestMatch = null;
+  
+  while (offset < 800) {
+    const response = await SpotifyPlaybackApi.searchTracksWithPagination(
+      accessToken,
+      query,
+      offset
+    );
+
+    const tracks = response.data.tracks.items;
+    if (!tracks.length) break;
+
+    console.log(`Checking results ${offset + 1} to ${offset + tracks.length}`);
+    
+    for (const track of tracks) {
+      const score = calculateTrackScore(song, artist, track);
+      console.log(`Score ${score.total}: ${track.name} - ${track.artists[0].name} (${score.reason})`);
+
+      if (score.total >= 200) { // Exact match
+        return track;
+      } else if (score.total >= 150 && !bestMatch) { // Very good match
+        bestMatch = track;
+      }
+    }
+
+    if (bestMatch) break;
+    offset += 50;
+  }
+
+  if (bestMatch) {
+    console.log("Best match found:", bestMatch.name, "-", bestMatch.artists[0].name);
+    return bestMatch;
+  }
+
+  return null;
+}
+
+function calculateTrackScore(searchSong, searchArtist, track) {
   const song1 = searchSong.toLowerCase();
-  const song2 = trackName.toLowerCase();
+  const song2 = track.name.toLowerCase();
   const artist1 = searchArtist.toLowerCase();
-  const artist2 = artistName.toLowerCase();
+  const artist2 = track.artists[0].name.toLowerCase();
 
   let score = 0;
+  let reason = [];
   
-  // Exact matches get highest score
-  if (song1 === song2) score += 100;
-  if (artist1 === artist2) score += 100;
-  
-  // Partial matches
-  if (song2.includes(song1)) score += 50;
-  if (artist2.includes(artist1)) score += 50;
-  
-  return score;
+  // Artist match is required for high scores
+  const isCorrectArtist = artist2 === artist1;
+  if (!isCorrectArtist) {
+    score -= 1000;
+    reason.push("wrong artist penalty");
+  } else {
+    score += 100;
+    reason.push("exact artist match");
+  }
+
+  // Exact song match
+  if (song1 === song2) {
+    score += 100;
+    reason.push("exact song match");
+  }
+
+  // Clean versions (remove special versions and check again)
+  const cleanSearchSong = song1.replace(/\([^)]*\)/g, '').trim();
+  const cleanTrackSong = song2
+    .replace(/\([^)]*\)/g, '')
+    .replace(/ - .*$/, '')
+    .replace(/(remastered|single version|album version|original)/gi, '')
+    .trim();
+
+  if (cleanSearchSong === cleanTrackSong) {
+    score += 75;
+    reason.push("clean name match");
+  }
+
+  // Partial matches - only if words appear in the same order
+  const searchWords = song1.split(' ');
+  const trackWords = song2.split(' ');
+  let foundInOrder = true;
+  let lastIndex = -1;
+
+  for (const word of searchWords) {
+    const index = trackWords.findIndex((w, i) => i > lastIndex && w === word);
+    if (index === -1) {
+      foundInOrder = false;
+      break;
+    }
+    lastIndex = index;
+  }
+
+  if (foundInOrder) {
+    score += 50;
+    reason.push("song words match in order");
+  }
+
+  // Version bonuses/penalties
+  if (song2.includes('remastered')) {
+    score += 10;
+    reason.push("remastered version");
+  }
+  if (song2.includes('single version')) {
+    score += 15;
+    reason.push("single version");
+  }
+  if (song2.includes('mono')) {
+    score += 15;
+    reason.push("mono version");
+  }
+  if (song2.includes('stereo')) {
+    score += 15;
+    reason.push("stereo version");
+  }
+  if (song2.includes('live')) {
+    score -= 50;
+    reason.push("live version penalty");
+  }
+  if (song2.includes('remix')) {
+    score -= 40;
+    reason.push("remix penalty");
+  }
+  if (song2.includes('karaoke')) {
+    score -= 50;
+    reason.push("karaoke penalty");
+  }
+  if (song2.includes('cover')) {
+    score -= 50;
+    reason.push("cover penalty");
+  }
+
+  // Popularity bonus (0-100)
+  const popularityBonus = Math.floor(track.popularity / 2);
+  score += popularityBonus;
+  reason.push(`popularity bonus: ${popularityBonus}`);
+
+  return {
+    total: score,
+    reason: reason.join(", ")
+  };
 } 
