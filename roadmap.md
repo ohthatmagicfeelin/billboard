@@ -7,6 +7,11 @@
 
 
 
+search functionality
+- double A sides have a / between tracks that should be two tracks.
+- remasters often have a year, so if the track is in the artists top tracks with remaster and a year, choose that track.
+
+
 
 How this is going to work
 

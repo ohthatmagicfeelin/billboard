@@ -13,7 +13,7 @@ export const SpotifyPlaybackService = {
       }
 
       // Search for tracks with pagination
-      console.log("\nSearching for track:", song);
+      console.log("\nSearching for:", `${song} ${artist}`);
       
       const artistMap = new Map();
       const searchArtist = artist.toLowerCase();
