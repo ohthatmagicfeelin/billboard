@@ -81,80 +81,138 @@ export const SpotifyPlaybackService = {
       }
       console.log("\n");
 
-      // For each matched artist above threshold, search their catalog
+      // For each matched artist above threshold, first check their top tracks
       for (const artistMatch of matchedArtists) {
-        console.log(`\nSearching catalog for ${artistMatch.name}...`);
+        console.log(`\nSearching top tracks for ${artistMatch.name}...`);
         
-        // Order of searching: singles -> albums -> compilations -> appears_on
-        const includeGroups = ['single', 'album', 'compilation', 'appears_on'];
-        
-        for (const group of includeGroups) {
-          console.log(`\nChecking ${group}s...`);
-          let offset = 0;
-          let hasMore = true;
+        try {
+          const topTracksResponse = await SpotifyPlaybackApi.getArtistTopTracks(
+            tokens.spotifyAccessToken,
+            artistMatch.id
+          );
 
-          while (hasMore) {
-            const albumsResponse = await SpotifyPlaybackApi.getArtistAlbums(
-              tokens.spotifyAccessToken,
-              artistMatch.id,
-              {
-                include_groups: group,
-                limit: 50,
-                offset: offset
+          const topTracks = topTracksResponse.data.tracks;
+          const matches = topTracks
+            .map(track => ({
+              track,
+              score: calculateTrackNameScore(song, track.name),
+              popularity: track.popularity
+            }))
+            .filter(result => result.score.total >= 150)
+            .sort((a, b) => {
+              // If scores are close (within 25 points), prefer the more popular track
+              if (Math.abs(b.score.total - a.score.total) <= 25) {
+                return b.track.popularity - a.track.popularity;
               }
+              return b.score.total - a.score.total;
+            });
+
+          if (matches.length > 0) {
+            console.log('\nFound matches in top tracks:');
+            matches.forEach(match => {
+              console.log(`Score ${match.score.total}: ${match.track.name} (${match.score.reason})`);
+            });
+
+            // If we found an exact match or a "Single Version", use it
+            const exactMatch = matches.find(m => 
+              m.score.total >= 200 || 
+              (m.score.total >= 150 && m.track.name.toLowerCase().includes('single version'))
             );
-
-            if (!albumsResponse.data.items.length) {
-              hasMore = false;
-              break;
+            
+            if (exactMatch) {
+              console.log("Found high-quality match in top tracks, attempting to play");
+              try {
+                await SpotifyPlaybackApi.playTrack(tokens.spotifyAccessToken, exactMatch.track.uri);
+                console.log("Track playback started successfully");
+              } catch (error) {
+                console.log("Failed to start playback:", error.message);
+              }
+              return {
+                uri: exactMatch.track.uri,
+                name: exactMatch.track.name,
+                album: exactMatch.track.album.name,
+                score: exactMatch.score
+              };
             }
+          }
 
-            // Get tracks for each album
-            for (const album of albumsResponse.data.items) {
-              const tracksResponse = await SpotifyPlaybackApi.getAlbumTracks(
+          // If no good match in top tracks, proceed with catalog search
+          console.log('\nNo ideal match in top tracks, searching full catalog...');
+          
+          // Order of searching: singles -> albums -> compilations -> appears_on
+          const includeGroups = ['single', 'album', 'compilation', 'appears_on'];
+          
+          for (const group of includeGroups) {
+            console.log(`\nChecking ${group}s...`);
+            let offset = 0;
+            let hasMore = true;
+
+            while (hasMore) {
+              const albumsResponse = await SpotifyPlaybackApi.getArtistAlbums(
                 tokens.spotifyAccessToken,
-                album.id
+                artistMatch.id,
+                {
+                  include_groups: group,
+                  limit: 50,
+                  offset: offset
+                }
               );
 
-              const tracks = tracksResponse.data.items;
-              const matches = tracks
-                .map(track => ({
-                  track,
-                  score: calculateTrackNameScore(song, track.name)
-                }))
-                .filter(result => result.score.total >= 150)
-                .sort((a, b) => b.score.total - a.score.total);
+              if (!albumsResponse.data.items.length) {
+                hasMore = false;
+                break;
+              }
 
-              if (matches.length > 0) {
-                console.log(`\nFound matches in ${album.name}:`);
-                matches.forEach(match => {
-                  console.log(`Score ${match.score.total}: ${match.track.name} (${match.score.reason})`);
-                });
+              // Get tracks for each album
+              for (const album of albumsResponse.data.items) {
+                const tracksResponse = await SpotifyPlaybackApi.getAlbumTracks(
+                  tokens.spotifyAccessToken,
+                  album.id
+                );
 
-                // If we found an exact match (score >= 200), try to play it and return the track info
-                const exactMatch = matches.find(m => m.score.total >= 200);
-                if (exactMatch) {
-                  console.log("Found exact match, attempting to play track");
-                  try {
-                    await SpotifyPlaybackApi.playTrack(tokens.spotifyAccessToken, exactMatch.track.uri);
-                    console.log("Track playback started successfully");
-                  } catch (error) {
-                    console.log("Failed to start playback:", error.message);
-                    // Don't throw here - we still want to return the track info
+                const tracks = tracksResponse.data.items;
+                const matches = tracks
+                  .map(track => ({
+                    track,
+                    score: calculateTrackNameScore(song, track.name)
+                  }))
+                  .filter(result => result.score.total >= 150)
+                  .sort((a, b) => b.score.total - a.score.total);
+
+                if (matches.length > 0) {
+                  console.log(`\nFound matches in ${album.name}:`);
+                  matches.forEach(match => {
+                    console.log(`Score ${match.score.total}: ${match.track.name} (${match.score.reason})`);
+                  });
+
+                  // If we found an exact match (score >= 200), try to play it and return the track info
+                  const exactMatch = matches.find(m => m.score.total >= 200);
+                  if (exactMatch) {
+                    console.log("Found exact match, attempting to play track");
+                    try {
+                      await SpotifyPlaybackApi.playTrack(tokens.spotifyAccessToken, exactMatch.track.uri);
+                      console.log("Track playback started successfully");
+                    } catch (error) {
+                      console.log("Failed to start playback:", error.message);
+                      // Don't throw here - we still want to return the track info
+                    }
+                    // Return the matched track info even if playback failed
+                    return {
+                      uri: exactMatch.track.uri,
+                      name: exactMatch.track.name,
+                      album: album.name,
+                      score: exactMatch.score
+                    };
                   }
-                  // Return the matched track info even if playback failed
-                  return {
-                    uri: exactMatch.track.uri,
-                    name: exactMatch.track.name,
-                    album: album.name,
-                    score: exactMatch.score
-                  };
                 }
               }
-            }
 
-            offset += 50;
+              offset += 50;
+            }
           }
+        } catch (error) {
+          console.log("Error searching top tracks:", error.message);
+          // If top tracks search fails, proceed with catalog search
         }
       }
 
@@ -390,8 +448,9 @@ function calculateTrackNameScore(searchName, trackName) {
   let score = 0;
   let reason = [];
 
-  // Exact match
-  if (name1 === name2) {
+  // Exact match (including "Single Version")
+  if (name1 === name2 || 
+      (name2.includes(name1) && name2.includes('single version'))) {
     score += 200;
     reason.push("exact match");
     return { total: score, reason: reason.join(", ") };
@@ -410,9 +469,9 @@ function calculateTrackNameScore(searchName, trackName) {
     reason.push("clean name match");
   }
 
-  // Version bonuses
+  // Version bonuses (increased "single version" bonus significantly)
   if (name2.includes('single version')) {
-    score += 15;
+    score += 50; // Increased from 15 to 50
     reason.push("single version");
   }
   if (name2.includes('remastered')) {

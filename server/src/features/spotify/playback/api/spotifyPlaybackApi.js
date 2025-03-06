@@ -18,15 +18,11 @@ export const SpotifyPlaybackApi = {
   },
 
   async getArtistTopTracks(accessToken, artistId) {
-    return await axios.get(
-      `https://api.spotify.com/v1/artists/${artistId}/top-tracks`,
-      {
-        params: { market: 'AU' },
-        headers: {
-          'Authorization': `Bearer ${accessToken}`
-        }
+    return await axios.get(`https://api.spotify.com/v1/artists/${artistId}/top-tracks?market=from_token`, {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`
       }
-    );
+    });
   },
 
   async searchTracks(accessToken, query) {
