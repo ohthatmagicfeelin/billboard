@@ -2,13 +2,14 @@ import axios from 'axios';
 
 export const SpotifyPlaybackApi = {
   async searchArtists(accessToken, artist) {
+    console.log("Searching for artist:", artist);
     const artistQuery = encodeURIComponent(artist);
     return await axios.get('https://api.spotify.com/v1/search', {
       params: {
         q: artistQuery,
         type: 'artist',
-        limit: 10,
-        market: 'AU'
+        limit: 50,
+        market: 'US'
       },
       headers: {
         'Authorization': `Bearer ${accessToken}`
@@ -69,5 +70,23 @@ export const SpotifyPlaybackApi = {
         }
       }
     );
+  },
+
+  async getArtistAlbums(accessToken, artistId, options) {
+    return await axios.get(`https://api.spotify.com/v1/artists/${artistId}/albums`, {
+      params: options,
+      headers: {
+        'Authorization': `Bearer ${accessToken}`
+      }
+    });
+  },
+
+  async getAlbumTracks(accessToken, albumId) {
+    return await axios.get(`https://api.spotify.com/v1/albums/${albumId}/tracks`, {
+      params: { limit: 50 },
+      headers: {
+        'Authorization': `Bearer ${accessToken}`
+      }
+    });
   }
 };
