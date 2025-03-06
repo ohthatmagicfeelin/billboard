@@ -4,7 +4,7 @@ import { BillboardChartDisplay } from './BillboardChartDisplay';
 import { useBillboardChart } from '../hooks/useBillboardChart';
 
 export function BillboardChartContainer() {
-  const [selectedDate, setSelectedDate] = useState('');
+  const [selectedDate, setSelectedDate] = useState(null);
   const {
     weekInfo,
     chartData,

@@ -12,10 +12,12 @@ export function DateSelectorContainer({ onDateChange, disabled }) {
     loading,
   } = useDateSelector();
 
-  // Propagate date changes to parent
+  // Propagate date changes to parent only when we have a valid date
   useEffect(() => {
-    onDateChange?.(selectedDate);
-  }, [selectedDate, onDateChange]);
+    if (selectedDate && availableWeeks.some(week => week.date === selectedDate)) {
+      onDateChange?.(selectedDate);
+    }
+  }, [selectedDate, availableWeeks, onDateChange]);
 
   return (
     <DateSelectorDisplay

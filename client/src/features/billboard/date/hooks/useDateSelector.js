@@ -8,10 +8,10 @@ export function useDateSelector() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Set current date when component mounts
+  // Set current year when component mounts
   useEffect(() => {
-    const currentDate = new Date().toISOString().split('T')[0];
-    setSelectedDate(currentDate);
+    const currentYear = new Date().getFullYear();
+    setSelectedYear(currentYear);
   }, []);
 
   // Fetch available weeks when year changes
@@ -19,6 +19,7 @@ export function useDateSelector() {
     async function fetchAvailableWeeks() {
       if (!selectedYear) {
         setAvailableWeeks([]);
+        setSelectedDate('');
         return;
       }
 
@@ -29,13 +30,16 @@ export function useDateSelector() {
         const weeks = await billboardApi.getYearWeeks(selectedYear);
         setAvailableWeeks(weeks);
 
-        // If we have weeks and no date is selected, select the most recent week
-        if (weeks.length > 0 && !selectedDate) {
+        // If we have weeks, select the most recent week
+        if (weeks.length > 0) {
           setSelectedDate(weeks[0].date);
+        } else {
+          setSelectedDate('');
         }
       } catch (err) {
         setError(err.response?.data?.message || 'Failed to fetch available weeks');
         setAvailableWeeks([]);
+        setSelectedDate('');
       } finally {
         setLoading(false);
       }
