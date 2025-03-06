@@ -1,13 +1,10 @@
 import { useState, useEffect } from 'react';
-import { billboardApi } from '../api/billboardApi';
+import { billboardApi } from '../../api/billboardApi';
 
-
-export function useBillboard() {
+export function useDateSelector() {
   const [selectedYear, setSelectedYear] = useState('');
   const [selectedDate, setSelectedDate] = useState('');
   const [availableWeeks, setAvailableWeeks] = useState([]);
-  const [weekInfo, setWeekInfo] = useState('');
-  const [chartData, setChartData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -47,42 +44,12 @@ export function useBillboard() {
     fetchAvailableWeeks();
   }, [selectedYear]);
 
-  // Fetch chart data when year or date changes
-  useEffect(() => {
-    async function fetchChartData() {
-      if (!selectedYear || !selectedDate) {
-        setChartData(null);
-        setWeekInfo('');
-        return;
-      }
-
-      setLoading(true);
-      setError(null);
-
-      try {
-        const response = await billboardApi.getHistoricalWeek(selectedYear, selectedDate);
-        setWeekInfo(response.weekInfo);
-        setChartData(response.data);
-      } catch (err) {
-        setError(err.response?.data?.message || 'Failed to fetch Billboard data');
-        setChartData(null);
-        setWeekInfo('');
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchChartData();
-  }, [selectedDate, selectedYear]);
-
   return {
     selectedYear,
     setSelectedYear,
     selectedDate,
     setSelectedDate,
     availableWeeks,
-    weekInfo,
-    chartData,
     loading,
     error
   };

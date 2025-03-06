@@ -1,54 +1,16 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useSpotify } from '@/contexts/SpotifyContext';
 import { SpotifyLoginPrompt } from '@/features/spotify/auth/components/SpotifyLoginPrompt';
-import api from '@/api/api';
-import { spotifyApi } from '@/features/spotify/playback/api/spotifyPlaybackApi';
 
-export function BillboardDisplay({ weekInfo, chartData, loading, error }) {
-  const { isConnected, playTrack } = useSpotify();
-  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
-  const [pendingTrack, setPendingTrack] = useState(null);
-  const [playbackError, setPlaybackError] = useState(null);
-
-  const handlePlay = useCallback(async (song, artist) => {
-    if (!isConnected) {
-      setPendingTrack({ song, artist });
-      setShowLoginPrompt(true);
-      return;
-    }
-    
-    try {
-      setPlaybackError(null);
-      await spotifyApi.searchAndPlay(song, artist);
-    } catch (error) {
-      setPlaybackError(error.message);
-    }
-  }, [isConnected]);
-
-  const handleSpotifyLogin = useCallback(async () => {
-    try {
-      sessionStorage.setItem('returnTo', window.location.pathname);
-      if (pendingTrack) {
-        sessionStorage.setItem('pendingTrack', JSON.stringify(pendingTrack));
-      }
-      const { data } = await api.get('/api/spotify/auth/auth-url');
-      window.location.href = data.url;
-    } catch (error) {
-      console.error('Failed to get Spotify auth URL:', error);
-    }
-  }, [pendingTrack]);
-
-  useEffect(() => {
-    if (isConnected) {
-      const savedTrack = sessionStorage.getItem('pendingTrack');
-      if (savedTrack) {
-        const track = JSON.parse(savedTrack);
-        handlePlay(track.song, track.artist);
-        sessionStorage.removeItem('pendingTrack');
-      }
-    }
-  }, [isConnected, handlePlay]);
-
+export function BillboardChartDisplay({
+  weekInfo,
+  chartData,
+  loading,
+  error,
+  playbackError,
+  showLoginPrompt,
+  onLoginPromptClose,
+  onSpotifyLogin,
+  onPlayTrack
+}) {
   if (loading) {
     return (
       <div className="space-y-4">
@@ -101,7 +63,7 @@ export function BillboardDisplay({ weekInfo, chartData, loading, error }) {
                   {entry.this_week}
                 </span>
                 <button
-                  onClick={() => handlePlay(entry.song, entry.artist)}
+                  onClick={() => onPlayTrack(entry.song, entry.artist)}
                   className="absolute left-5 w-16 h-16 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200"
                   aria-label={`Play ${entry.song}`}
                 >
@@ -195,8 +157,8 @@ export function BillboardDisplay({ weekInfo, chartData, loading, error }) {
 
       <SpotifyLoginPrompt
         isOpen={showLoginPrompt}
-        onClose={() => setShowLoginPrompt(false)}
-        onLogin={handleSpotifyLogin}
+        onClose={onLoginPromptClose}
+        onLogin={onSpotifyLogin}
       />
     </>
   );

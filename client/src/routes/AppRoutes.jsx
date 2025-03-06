@@ -8,7 +8,7 @@ import { ProtectedRoute } from '@/features/auth/components/ProtectedRoute';
 import { Settings } from '@/pages/Settings';
 import { MainLayout } from '@/layouts/MainLayout';
 import { useAuth } from '@/contexts/AuthContext';
-import { BillboardContainer } from '@/features/billboard/components/BillboardContainer';
+import { BillboardChartContainer } from '@/features/billboard/core/components/BillboardChartContainer';
 import { SpotifyCallback } from '@/features/spotify/auth/components/SpotifyCallback';
 
 
@@ -29,7 +29,7 @@ function AppRoutes() {
           {/* Update root route to show Billboard */}
           <Route 
             path="/" 
-            element={<BillboardContainer />} 
+            element={<BillboardChartContainer />} 
           />
 
           {/* Public routes - redirect if authenticated */}
