@@ -21,7 +21,7 @@ export const SpotifyAuthController = {
     }
 
     const tokens = await SpotifyAuthService.exchangeCode(code);
-    await SpotifyRepository.saveUserTokens(req.user.id, tokens);
+    await SpotifyAuthRepository.saveUserTokens(req.user.id, tokens);
 
     res.json({ success: true });
   }),
