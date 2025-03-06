@@ -66,13 +66,21 @@ export const BillboardRepository = {
             orderBy: {
               thisWeek: 'asc'
             },
-            select: {
-              song: true,
-              artist: true,
-              thisWeek: true,
-              lastWeek: true,
-              peakPosition: true,
-              weeksOnChart: true
+            include: {
+              track: {
+                select: {
+                  billboardName: true,
+                  spotifyId: true,
+                  spotifyName: true
+                }
+              },
+              artist: {
+                select: {
+                  billboardName: true,
+                  spotifyId: true,
+                  spotifyName: true
+                }
+              }
             }
           }
         }
@@ -84,12 +92,19 @@ export const BillboardRepository = {
       return {
         weekNumber: await calculateWeekNumber(chart.chartDate),
         entries: chart.entries.map(entry => ({
-          song: entry.song,
-          artist: entry.artist,
+          song: entry.track.billboardName,
+          artist: entry.artist.billboardName,
           this_week: entry.thisWeek,
           last_week: entry.lastWeek,
           peak_position: entry.peakPosition,
-          weeks_on_chart: entry.weeksOnChart
+          weeks_on_chart: entry.weeksOnChart,
+          // Add Spotify data if available
+          spotify: {
+            trackId: entry.track.spotifyId,
+            trackName: entry.track.spotifyName,
+            artistId: entry.artist.spotifyId,
+            artistName: entry.artist.spotifyName
+          }
         }))
       };
     } catch (error) {
