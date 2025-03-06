@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSpotify } from '@/contexts/SpotifyContext';
 import { SpotifyLoginPrompt } from '@/features/spotify/components/SpotifyLoginPrompt';
 import api from '@/api/api';
-import { spotifyApi } from '@/features/spotify/api/spotifyApi';
+import { spotifyApi } from '@/features/spotify/playback/api/spotifyPlaybackApi';
 
 export function BillboardDisplay({ weekInfo, chartData, loading, error }) {
   const { isConnected, playTrack } = useSpotify();

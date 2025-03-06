@@ -1,35 +1,29 @@
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { spotifyApi } from '@/features/spotify/api/spotifyApi';
-import api from '@/api/api';
+import { spotifyAuthApi } from '@/features/spotify/auth/spotifyAuthApi';
+import { spotifyApi } from '@/features/spotify/playback/api/spotifyPlaybackApi';
 
 const SpotifyContext = createContext();
 
 export function SpotifyProvider({ children }) {
   const [isConnected, setIsConnected] = useState(false);
-  const [accessToken, setAccessToken] = useState(null);
-  const [player, setPlayer] = useState(null);
   const [deviceId, setDeviceId] = useState(null);
+  const [player, setPlayer] = useState(null);
 
   const checkConnection = useCallback(async () => {
     try {
-      const { data } = await api.get('/api/spotify/auth/check-connection');
-      setIsConnected(data.isConnected);
-      if (data.accessToken) {
-        setAccessToken(data.accessToken);
-        spotifyApi.setAccessToken(data.accessToken);
-      }
-      return data.isConnected;
+      const { isConnected } = await spotifyAuthApi.checkConnection();
+      setIsConnected(isConnected);
+      return isConnected;
     } catch (error) {
       console.error('Failed to check Spotify connection:', error);
       setIsConnected(false);
-      setAccessToken(null);
       return false;
     }
   }, []);
 
   // Initialize Spotify Web Playback SDK
   useEffect(() => {
-    if (!accessToken) return;
+    if (!isConnected) return;
 
     const script = document.createElement('script');
     script.src = 'https://sdk.scdn.co/spotify-player.js';
@@ -37,23 +31,34 @@ export function SpotifyProvider({ children }) {
 
     document.body.appendChild(script);
 
-    window.onSpotifyWebPlaybackSDKReady = () => {
-      const player = new window.Spotify.Player({
-        name: 'Billboard Time Machine',
-        getOAuthToken: cb => { cb(accessToken); }
-      });
+    window.onSpotifyWebPlaybackSDKReady = async () => {
+      try {
+        // Get a fresh token from the backend
+        const { accessToken } = await spotifyAuthApi.refreshToken();
+        
+        const player = new window.Spotify.Player({
+          name: 'Billboard Time Machine',
+          getOAuthToken: async cb => {
+            // Get fresh token each time it's needed
+            const { accessToken } = await spotifyAuthApi.refreshToken();
+            cb(accessToken);
+          }
+        });
 
-      player.addListener('ready', ({ device_id }) => {
-        console.log('Ready with Device ID', device_id);
-        setDeviceId(device_id);
-      });
+        player.addListener('ready', ({ device_id }) => {
+          console.log('Ready with Device ID', device_id);
+          setDeviceId(device_id);
+        });
 
-      player.addListener('not_ready', ({ device_id }) => {
-        console.log('Device ID has gone offline', device_id);
-      });
+        player.addListener('not_ready', ({ device_id }) => {
+          console.log('Device ID has gone offline', device_id);
+        });
 
-      player.connect();
-      setPlayer(player);
+        player.connect();
+        setPlayer(player);
+      } catch (error) {
+        console.error('Failed to initialize Spotify player:', error);
+      }
     };
 
     return () => {
@@ -61,22 +66,15 @@ export function SpotifyProvider({ children }) {
         player.disconnect();
       }
     };
-  }, [accessToken]);
+  }, [isConnected]);
 
   const playTrack = useCallback(async (song, artist) => {
-    if (!isConnected || !accessToken) {
+    if (!isConnected) {
       throw new Error('Not connected to Spotify');
     }
 
-    try {
-      const track = await spotifyApi.searchTrack(song, artist);
-      await spotifyApi.playTrack(track.uri);
-      return track;
-    } catch (error) {
-      console.error('Failed to play track:', error);
-      throw error;
-    }
-  }, [isConnected, accessToken]);
+    return await spotifyApi.searchAndPlay(song, artist);
+  }, [isConnected]);
 
   // Check connection on mount
   useEffect(() => {
@@ -85,9 +83,9 @@ export function SpotifyProvider({ children }) {
 
   const value = {
     isConnected,
-    accessToken,
     checkConnection,
-    playTrack
+    playTrack,
+    deviceId
   };
 
   return (

@@ -32,7 +32,7 @@ export const SpotifyAuthController = {
     }
 
     const tokens = await SpotifyAuthService.refreshToken(req.user.id);
-    res.json({ success: true, accessToken: tokens.access_token });
+    res.json({ accessToken: tokens.access_token });
   }),
 
   checkConnection: catchAsync(async (req, res) => {
@@ -50,17 +50,11 @@ export const SpotifyAuthController = {
     const isExpired = tokens.spotifyTokenExpiry < new Date();
     
     if (isExpired) {
-      const newTokens = await SpotifyAuthService.refreshToken(req.user.id);
-      return res.json({ 
-        isConnected: true, 
-        accessToken: newTokens.access_token 
-      });
+      await SpotifyAuthService.refreshToken(req.user.id);
+      return res.json({ isConnected: true });
     }
 
-    return res.json({ 
-      isConnected: true, 
-      accessToken: tokens.spotifyAccessToken 
-    });
+    return res.json({ isConnected: true });
   }),
 
 }; 
