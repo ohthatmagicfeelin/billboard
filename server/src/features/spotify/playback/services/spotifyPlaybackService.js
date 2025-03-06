@@ -1,5 +1,6 @@
 import { SpotifyPlaybackApi } from '../api/spotifyPlaybackApi.js';
 import { SpotifyAuthRepository } from '../../auth/repositories/spotifyAuthRepository.js';
+import { SpotifyMatchService } from '../../matching/services/spotifyMatchService.js';
 import { AppError } from '../../../../utils/AppError.js';
 
 export const SpotifyPlaybackService = {
@@ -124,6 +125,14 @@ export const SpotifyPlaybackService = {
               try {
                 await SpotifyPlaybackApi.playTrack(tokens.spotifyAccessToken, exactMatch.track.uri);
                 console.log("Track playback started successfully");
+
+                // Save the match to database
+                await SpotifyMatchService.saveSpotifyMatch({
+                  billboardArtistName: artist,
+                  billboardTrackName: song,
+                  spotifyArtistData: artistMatch,
+                  spotifyTrackData: exactMatch.track
+                });
               } catch (error) {
                 console.log("Failed to start playback:", error.message);
               }
@@ -192,6 +201,14 @@ export const SpotifyPlaybackService = {
                     try {
                       await SpotifyPlaybackApi.playTrack(tokens.spotifyAccessToken, exactMatch.track.uri);
                       console.log("Track playback started successfully");
+
+                      // Save the match to database
+                      await SpotifyMatchService.saveSpotifyMatch({
+                        billboardArtistName: artist,
+                        billboardTrackName: song,
+                        spotifyArtistData: artistMatch,
+                        spotifyTrackData: exactMatch.track
+                      });
                     } catch (error) {
                       console.log("Failed to start playback:", error.message);
                       // Don't throw here - we still want to return the track info
