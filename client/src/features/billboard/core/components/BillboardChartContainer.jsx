@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { DateSelectorContainer } from '../../date/components/DateSelectorContainer';
 import { BillboardChartDisplay } from './BillboardChartDisplay';
 import { useBillboardChart } from '../hooks/useBillboardChart';
+import { SpotifyPlaybackTest } from '@/features/spotify/playbackSdk/components/SpotifyPlaybackTest';
 
 export function BillboardChartContainer() {
   const [selectedDate, setSelectedDate] = useState(null);
@@ -39,6 +40,8 @@ export function BillboardChartContainer() {
         onSpotifyLogin={handleSpotifyLogin}
         onPlayTrack={handlePlay}
       />
+
+      <SpotifyPlaybackTest />
     </div>
   );
 } 
