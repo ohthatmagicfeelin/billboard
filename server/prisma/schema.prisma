@@ -150,13 +150,13 @@ model BillboardChart {
 
 model Artist {
   id            Int      @id @default(autoincrement())
-  billboardName String   @unique // Original name from Billboard
-  spotifyName   String?  // Name from Spotify
-  spotifyId     String?  @unique // Spotify Artist ID
+  billboardName String   @unique @map("billboard_name")
+  spotifyName   String?  @map("spotify_name")
+  spotifyId     String?  @unique @map("spotify_id")
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
-  tracks        Track[]  // Relation to tracks
-  billboardEntries BillboardEntry[] // Relation to billboard entries
+  tracks        Track[]
+  billboardEntries BillboardEntry[]
 
   @@map("artists")
   @@index([billboardName])
@@ -165,22 +165,21 @@ model Artist {
 
 model Track {
   id            Int      @id @default(autoincrement())
-  billboardName String   // Original name from Billboard
-  spotifyName   String?  // Name from Spotify
-  spotifyId     String?  @unique // Spotify Track ID
+  billboardName String   @map("billboard_name")
+  spotifyName   String?  @map("spotify_name")
+  spotifyId     String?  @unique @map("spotify_id")
   artistId      Int      @map("artist_id")
   artist        Artist   @relation(fields: [artistId], references: [id])
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
-  billboardEntries BillboardEntry[] // Relation to billboard entries
+  billboardEntries BillboardEntry[]
 
-  @@unique([billboardName, artistId]) // Same song name by same artist should be unique
+  @@unique([billboardName, artistId])
   @@map("tracks")
   @@index([billboardName])
   @@index([spotifyId])
 }
 
-// Modify BillboardEntry to include relations
 model BillboardEntry {
   id            Int            @id @default(autoincrement())
   chartId       Int           @map("chart_id")

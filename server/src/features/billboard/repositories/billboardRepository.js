@@ -9,7 +9,7 @@ export const BillboardRepository = {
       const targetDay = targetDate.getDate();
 
       // Find the chart date that's closest to but not after the target month/day in the specified year
-      const chart = await prisma.billboardChart.findFirst({
+      const chart = await prisma.BillboardChart.findFirst({
         where: {
           chartDate: {
             gte: new Date(year, 0, 1),    // Start of the specified year
@@ -26,7 +26,7 @@ export const BillboardRepository = {
 
       if (!chart) {
         // If no chart found before the target date in that year, get the first chart of the year
-        const firstChart = await prisma.billboardChart.findFirst({
+        const firstChart = await prisma.BillboardChart.findFirst({
           where: {
             chartDate: {
               gte: new Date(year, 0, 1),
@@ -57,7 +57,7 @@ export const BillboardRepository = {
 
   findChartByDate: async (date) => {
     try {
-      const chart = await prisma.billboardChart.findFirst({
+      const chart = await prisma.BillboardChart.findFirst({
         where: {
           chartDate: new Date(date)
         },
@@ -114,7 +114,7 @@ export const BillboardRepository = {
 
   findWeeksByYear: async (year) => {
     try {
-      const charts = await prisma.billboardChart.findMany({
+      const charts = await prisma.BillboardChart.findMany({
         where: {
           chartDate: {
             gte: new Date(year, 0, 1),
@@ -148,7 +148,7 @@ export const BillboardRepository = {
 async function calculateWeekNumber(date) {
   try {
     const year = date.getFullYear();
-    const count = await prisma.billboardChart.count({
+    const count = await prisma.BillboardChart.count({
       where: {
         chartDate: {
           gte: new Date(year, 0, 1),
