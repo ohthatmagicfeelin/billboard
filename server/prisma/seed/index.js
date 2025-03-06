@@ -4,6 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { cleanDatabase } from './utils/cleanDatabase.js';
 import { seedBillboardData } from './seeders/billboardSeeder.js';
+import { seedUsers } from './seeders/userSeeder.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -15,6 +16,9 @@ async function main() {
     
     console.log('Starting seed...');
     
+    // First seed users
+    await seedUsers();
+    
     // Read billboard data
     const billboardData = JSON.parse(
         fs.readFileSync(
@@ -23,7 +27,7 @@ async function main() {
         )
     );
 
-    // Seed billboard data
+    // Then seed billboard data
     await seedBillboardData(billboardData);
     
     console.log('Seeding completed!');
